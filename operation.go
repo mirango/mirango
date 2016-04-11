@@ -21,15 +21,17 @@ func NewOperations() *Operations {
 func (ops *Operations) Append(operations ...*Operation) {
 	le := len(ops.operations)
 	for i := 0; i < len(operations); i++ {
-		ops.operations = append(ops.operations, operations[i])
 		name := operations[i].name
 		if name == "" {
+			ops.operations = append(ops.operations, operations[i])
 			continue
+		} else {
+			if _, ok := ops.index[name]; ok {
+				panic(fmt.Sprintf("Detected 2 operations with the same name: \"%s\".", name))
+			}
+			ops.operations = append(ops.operations, operations[i])
+			ops.index[name] = le + i
 		}
-		if _, ok := ops.index[name]; ok {
-			panic(fmt.Sprintf("Detected 2 operations with the same name: \"%s\".", name))
-		}
-		ops.index[name] = le + i
 	}
 }
 
@@ -193,7 +195,6 @@ func (o *Operation) Accepts(accepts ...string) *Operation {
 
 func (o *Operation) Returns(returns ...string) *Operation {
 	o.returns = returns
-	o.prepare()
 	return o
 }
 

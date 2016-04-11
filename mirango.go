@@ -29,6 +29,8 @@ func (m *Mirango) Renderers(r ...framework.Renderer) {
 	m.renderers.Append(r...)
 }
 
+func (m *Mirango) Optimize() {
+	// do optimization to routes and operations so that every object has what it needs
 }
 
 func (m *Mirango) Logger(l framework.Logger) {
