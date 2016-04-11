@@ -22,7 +22,7 @@ type Route struct {
 	panicHandler            Handler
 
 	slices           []string
-	paramIndices     []int
+	paramIndices     map[int]int
 	paramNames       []string
 	containsWildCard bool
 }
@@ -52,9 +52,10 @@ func (r Routes) Less(i int, j int) bool {
 
 func NewRoute(path string) *Route {
 	return &Route{
-		path:       cleanPath(path),
-		operations: NewOperations(),
-		params:     NewParams(),
+		path:         cleanPath(path),
+		operations:   NewOperations(),
+		params:       NewParams(),
+		paramIndices: map[int]int{},
 	}
 }
 
@@ -75,11 +76,14 @@ func (r *Route) GetRoot() *Route {
 func (r *Route) processPath() {
 	//path := r.path
 	r.paramNames = nil
+	r.paramIndices = map[int]int{}
 	slices := strings.Split(r.path[1:], "/")
 
 	if len(slices) == 0 {
 		panic("path is empty")
 	}
+
+	r.slices = slices
 
 	// check that every var name has length more than 0
 
@@ -88,11 +92,14 @@ func (r *Route) processPath() {
 		wildcardParam := strings.LastIndex(s, "*")
 		if param > wildcardParam {
 			r.paramNames = append(r.paramNames, s[param+1:])
+			r.paramIndices[i] = param
 		} else if param < wildcardParam && i == len(slices)-1 {
 			r.paramNames = append(r.paramNames, s[wildcardParam+1:])
+			r.paramIndices[i] = wildcardParam
 			r.containsWildCard = true
 			r.children = nil
 		} else if param == -1 && wildcardParam == -1 {
+			r.paramIndices[i] = -1
 			continue
 		}
 	}
@@ -120,28 +127,37 @@ func (r *Route) match(path string) (nr *Route, p pathParams) {
 	}
 
 	slices := strings.Split(path[1:], "/")
+
+	param := -1
+	wildcardParam := -1
+
 look:
 	for _, c := range route.children {
-		cPath := c.path
-		cSlices := strings.Split(cPath[1:], "/")
 	walk:
-		for j := range cSlices {
-			param := strings.LastIndex(cSlices[j], ":")
-			wildcardParam := strings.LastIndex(cSlices[j], "*")
+		for j := range c.slices {
+			param = -1
+			wildcardParam = -1
+			if c.containsWildCard {
+				if j == len(c.slices)-1 {
+					wildcardParam = c.paramIndices[j]
+				}
+			} else {
+				param = c.paramIndices[j]
+			}
 
 			if param == -1 && wildcardParam == -1 {
-				if cSlices[j] != slices[j] {
-					if j == len(slices)-1 && j == len(cSlices)-1 {
+				if c.slices[j] != slices[j] {
+					if j == len(slices)-1 && j == len(c.slices)-1 {
 						nr = nil
 						p = nil
 						return
 					}
 					continue look
 				} else {
-					if j == len(slices)-1 && j == len(cSlices)-1 {
+					if j == len(slices)-1 && j == len(c.slices)-1 {
 						nr = c
 						return
-					} else if j == len(cSlices)-1 {
+					} else if j == len(c.slices)-1 {
 						route = c
 						slices = slices[j+1:]
 						params = 0
@@ -153,16 +169,16 @@ look:
 					}
 					continue walk
 				}
-			} else if (param > wildcardParam && (len(slices[j]) <= param || slices[j][:param] != cSlices[j][:param])) ||
-				((param < wildcardParam) && (!c.containsWildCard || len(slices[j]) <= wildcardParam || slices[j][:wildcardParam] != cSlices[j][:wildcardParam])) {
+			} else if (param > wildcardParam && (len(slices[j]) <= param || slices[j][:param] != c.slices[j][:param])) ||
+				((param < wildcardParam) && (!c.containsWildCard || len(slices[j]) <= wildcardParam || slices[j][:wildcardParam] != c.slices[j][:wildcardParam])) {
 				continue look
 			} else if param > wildcardParam {
 				p = append(p, &pathParam{c.paramNames[params], slices[j][param:]})
 				params++
-				if j == len(slices)-1 && j == len(cSlices)-1 {
+				if j == len(slices)-1 && j == len(c.slices)-1 {
 					nr = c
 					return
-				} else if j == len(cSlices)-1 {
+				} else if j == len(c.slices)-1 {
 					route = c
 					slices = slices[j+1:]
 					params = 0
@@ -174,7 +190,6 @@ look:
 				}
 				continue walk
 			} else if param < wildcardParam {
-
 				p = append(p, &pathParam{c.paramNames[params], strings.TrimSuffix(slices[j][wildcardParam:]+"/"+strings.Join(slices[j+1:], "/"), "/")})
 				nr = c
 				return
