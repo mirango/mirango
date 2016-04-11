@@ -31,6 +31,21 @@ func (r *Request) ParamOk(name string) (framework.ParamValue, bool) {
 	return p, ok
 }
 
+func (r *Request) Params(names ...string) framework.ParamValues {
+	if len(names) == 0 {
+		return r.Input
+	}
+	params := framework.ParamValues{}
+	for _, n := range names {
+		p, ok := r.Input[n]
+		if !ok {
+			continue
+		}
+		params[n] = p
+	}
+	return params
+}
+
 func (r *Request) Path() string {
 	return r.RequestURI
 }
