@@ -11,7 +11,10 @@ type Context struct {
 	*Response
 	*Request
 	operation *Operation
+	id        int64
 	values    framework.Values
+	user      framework.User
+	locale    framework.Locale
 	ended     bool
 }
 
@@ -21,6 +24,18 @@ func NewContext(res *Response, req *Request) *Context {
 		Request:  req,
 		values:   framework.Values{},
 	}
+}
+
+func (c *Context) Id() int64 {
+	return c.id
+}
+
+func (c *Context) Locale() framework.Locale {
+	return c.locale
+}
+
+func (c *Context) User() framework.User {
+	return c.user
 }
 
 func (c *Context) Operation() framework.Operation {
