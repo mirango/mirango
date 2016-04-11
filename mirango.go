@@ -18,8 +18,7 @@ type Mirango struct {
 func New() *Mirango {
 	r := NewRoute("")
 	m := &Mirango{
-		route:      r,
-		Operations: NewOperations(),
+		route: r,
 	}
 	r.mirango = m
 	return m
