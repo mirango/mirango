@@ -3,7 +3,7 @@ package mirango
 import (
 	"strings"
 
-	"github.com/wlMalk/mirango/validation"
+	"github.com/mirango/validation"
 )
 
 type Route struct {

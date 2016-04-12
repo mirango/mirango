@@ -3,8 +3,8 @@ package mirango
 import (
 	"fmt"
 
-	"github.com/wlMalk/mirango/framework"
-	"github.com/wlMalk/mirango/validation"
+	"github.com/mirango/framework"
+	"github.com/mirango/validation"
 )
 
 type Params struct {

@@ -3,8 +3,8 @@ package mirango
 import (
 	"fmt"
 
-	"github.com/wlMalk/mirango/defaults"
-	"github.com/wlMalk/mirango/framework"
+	"github.com/mirango/defaults"
+	"github.com/mirango/framework"
 )
 
 type Operations struct {

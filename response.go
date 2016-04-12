@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/wlMalk/mirango/framework"
+	"github.com/mirango/framework"
 )
 
 type Response struct {

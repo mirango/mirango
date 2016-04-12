@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/wlMalk/mirango/defaults"
-	"github.com/wlMalk/mirango/framework"
-	"github.com/wlMalk/mirango/internal/util"
-	"github.com/wlMalk/mirango/validation"
+	"github.com/mirango/defaults"
+	"github.com/mirango/framework"
+	"github.com/mirango/mirango/internal/util"
+	"github.com/mirango/validation"
 )
 
 type Middleware interface {

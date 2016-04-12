@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/wlMalk/mirango/framework"
+	"github.com/mirango/framework"
 )
 
 type Handler interface {

@@ -3,7 +3,7 @@ package mirango
 import (
 	"net/http"
 
-	"github.com/wlMalk/mirango/framework"
+	"github.com/mirango/framework"
 )
 
 type Context struct {

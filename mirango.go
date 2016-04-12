@@ -3,8 +3,8 @@ package mirango
 import (
 	"net/http"
 
-	"github.com/wlMalk/mirango/framework"
-	"github.com/wlMalk/mirango/server"
+	"github.com/mirango/framework"
+	"github.com/mirango/server"
 )
 
 type Mirango struct {
