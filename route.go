@@ -283,6 +283,15 @@ func (r *Route) DELETE(h interface{}) *Operation {
 	return o
 }
 
+func (r *Route) Operations(ops ...*Operation) *Route {
+	for _, o := range ops {
+		o = o.Clone()
+		o.route = r
+		r.operations.Append(o)
+	}
+	return r
+}
+
 // Copy returns a pointer to a copy of the route.
 // It does not copy parent, operations, nor deep-copy the params.
 func (r *Route) Clone() *Route {
@@ -299,6 +308,20 @@ func (r *Route) Clone() *Route {
 
 func (r *Route) Params(params ...*Param) *Route {
 	r.params.Set(params...)
+	return r
+}
+
+func (r *Route) With(mw ...interface{}) *Route {
+	for i := 0; i < len(mw); i++ {
+		switch t := mw[i].(type) {
+		case Middleware:
+			r.middleware = append(r.middleware, t)
+		case MiddlewareFunc:
+			r.middleware = append(r.middleware, t)
+		case func(Handler) Handler:
+			r.middleware = append(r.middleware, MiddlewareFunc(t))
+		}
+	}
 	return r
 }
 
