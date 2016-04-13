@@ -9,7 +9,7 @@ type Error struct {
 	Code    int
 	Type    string
 	Message string
-	Values  map[interface{}]interface{}
+	Values  map[string]interface{}
 }
 
 func NewError(code int, typ string, message string) *Error {
