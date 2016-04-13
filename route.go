@@ -229,7 +229,7 @@ func (r *Route) Path(path string) {
 	r.path = cleanPath(path)
 }
 
-func (r *Route) Route(path string) *Route {
+func (r *Route) Branch(path string) *Route {
 	nr := NewRoute(path)
 	return r.AddRoute(nr)
 }
@@ -311,6 +311,21 @@ func (r *Route) Params(params ...*Param) *Route {
 	return r
 }
 
+func (r *Route) Schemes(schemes ...string) *Route {
+	r.schemes = schemes
+	return r
+}
+
+func (r *Route) Accepts(accepts ...string) *Route {
+	r.accepts = accepts
+	return r
+}
+
+func (r *Route) Returns(returns ...string) *Route {
+	r.returns = returns
+	return r
+}
+
 func (r *Route) With(mw ...interface{}) *Route {
 	for i := 0; i < len(mw); i++ {
 		switch t := mw[i].(type) {
@@ -382,6 +397,11 @@ func (r *Route) GetAllReturns() []string {
 }
 
 func (r *Route) ServeHTTP(c *Context, params pathParams) interface{} {
+	err := setPathParams(c, r.GetAllParams(), params)
+	if err != nil {
+		return err
+	}
+
 	o := r.operations.GetByMethod(c.Request.Request.Method)
 	if o == nil {
 		return nil
