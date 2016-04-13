@@ -112,9 +112,9 @@ func (m *Mirango) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for _, ss := range m.sessionStores {
 			ses, err = ss.GetAll(r)
 			if err != nil {
-				// log
+				return
 			}
-			c.sessions.AddMany(ses...)
+			c.sessions.Append(ses...)
 		}
 	}
 
@@ -123,7 +123,11 @@ func (m *Mirango) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		data := route.ServeHTTP(c, params)
 		// check data type
 		if !c.ended {
-			err := nw.Render(c, data)
+			err := c.sessions.Save(r, w)
+			if err != nil {
+				return
+			}
+			err = nw.Render(c, data)
 			if err != nil {
 				return
 			}
