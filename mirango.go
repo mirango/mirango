@@ -1,3 +1,23 @@
+// Mirango is a conveniently smart web framework that is built with reusibility and easiness in mind.
+//
+// Mirango supports the following handler types:
+// mirango.Handler
+// mirango.HandlerFunc
+// func(*Context) interface{}
+// func(*Context)
+// framework.Handler
+// framework.HandlerFunc
+// func(framework.Context) interface{}
+// func(framework.Context)
+// func(*Response, *Request) interface{}
+// func(*Response, *Request)
+// func(framework.Response, framework.Request) interface{}
+// func(framework.Response, framework.Request)
+// http.Handler
+// http.HandlerFunc
+// func(http.ResponseWriter, *http.Request) interface{}
+// func(http.ResponseWriter, *http.Request)
+//
 package mirango
 
 import (
@@ -8,8 +28,8 @@ import (
 )
 
 type Mirango struct {
+	*Route
 	server        framework.Server
-	route         *Route
 	renderers     framework.Renderers
 	logger        framework.Logger
 	sessionStores []framework.SessionStore // add ability to make sessions on different stores
@@ -18,7 +38,7 @@ type Mirango struct {
 func New() *Mirango {
 	r := NewRoute("")
 	m := &Mirango{
-		route: r,
+		Route: r,
 	}
 	r.mirango = m
 	return m
@@ -43,27 +63,12 @@ func (m *Mirango) SessionStore(ss framework.SessionStore) {
 }
 
 func (m *Mirango) Params(params ...*Param) *Mirango {
-	m.route.params.Set(params...)
+	m.Route.Params(params...)
 	return m
 }
 
-func (m *Mirango) GetParams() *Params {
-	return m.route.params
-}
-
-func (m *Mirango) Route(path string) *Route {
-	r := NewRoute(path)
-	return m.AddRoute(r)
-}
-
-func (m *Mirango) AddRoute(r *Route) *Route {
-	r = m.route.AddRoute(r)
-	r.setMirango()
-	return r
-}
-
 func (m *Mirango) Path(path string) *Mirango {
-	m.route.Path(path)
+	m.Route.Path(path)
 	return m
 }
 
@@ -113,7 +118,7 @@ func (m *Mirango) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	route, params := m.route.match(cleanPath(r.URL.Path)) // recommend redirection to standard path, tell if a match is found, otherwise return the latest found route
+	route, params := m.Route.match(cleanPath(r.URL.Path)) // recommend redirection to standard path, tell if a match is found, otherwise return the latest found route
 	if route != nil {
 		data := route.ServeHTTP(c, params)
 		// check data type
