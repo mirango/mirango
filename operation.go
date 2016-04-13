@@ -93,6 +93,11 @@ type Operation struct {
 	renders       string
 	mimeTypeIn    paramIn
 	mimeTypeParam string
+
+	allParams  *Params
+	allSchemes []string
+	allAccepts []string
+	allReturns []string
 }
 
 func NewOperation(r *Route, h interface{}) *Operation {
@@ -109,6 +114,7 @@ func NewOperation(r *Route, h interface{}) *Operation {
 		accepts: defaults.Accepts,
 		returns: defaults.Returns,
 	}
+	o.middleware = []Middleware{CheckReturns(o), CheckSchemes(o), CheckAccepts(o), CheckParams(o)}
 	return o
 }
 
@@ -137,33 +143,37 @@ func (o *Operation) Uses(h interface{}) *Operation { //interface
 	return o
 }
 
-func getHandler(h interface{}, mw []interface{}) (Handler, error) {
+func getHandler(h interface{}, mw []Middleware) (Handler, error) {
 	final, err := handler(h)
 	if err != nil {
 		return nil, err
 	}
 	for i := len(mw) - 1; i >= 0; i-- {
-		switch t := mw[i].(type) {
-		case Middleware:
-			final = t.Run(final)
-		case MiddlewareFunc:
-			final = t(final)
-		case func(Handler) Handler:
-			final = t(final)
-		default:
-			return nil, fmt.Errorf("invalid type for middleware")
-		}
+		final = mw[i].Run(final)
 	}
 	return final, nil
 }
 
 func (o *Operation) With(mw ...interface{}) *Operation {
-	handler, err := getHandler(o.handler, mw)
+	for i := 0; i < len(mw); i++ {
+		switch t := mw[i].(type) {
+		case Middleware:
+			o.middleware = append(o.middleware, t)
+		case MiddlewareFunc:
+			o.middleware = append(o.middleware, t)
+		case func(Handler) Handler:
+			o.middleware = append(o.middleware, MiddlewareFunc(t))
+		}
+	}
+	return o
+}
+
+func (o *Operation) with() {
+	handler, err := getHandler(o.handler, o.middleware)
 	if err != nil {
 		panic(err.Error())
 	}
 	o.handler = handler
-	return o
 }
 
 func (o *Operation) Apply(temps ...func(*Operation)) *Operation {
