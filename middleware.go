@@ -19,7 +19,7 @@ func (f MiddlewareFunc) Run(h Handler) Handler {
 	return f(h)
 }
 
-func CheckSchemes(schemes []string) MiddlewareFunc {
+func CheckSchemes(o *Operation) MiddlewareFunc {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
 
@@ -73,11 +73,11 @@ func getEncodingFromAccept(returns []string, r *Request) (string, *Error) {
 	return encoding, nil
 }
 
-func CheckReturns(returns []string, mimeTypeIn paramIn, mimeTypeParam string) MiddlewareFunc {
+func CheckReturns(o *Operation) MiddlewareFunc {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
 			// if mimeInAccept {
-			enc, err := getEncodingFromAccept(returns, c.Request)
+			enc, err := getEncodingFromAccept(o.GetAllReturns(), c.Request)
 			if err != nil {
 				return err
 			}
@@ -91,7 +91,7 @@ func CheckReturns(returns []string, mimeTypeIn paramIn, mimeTypeParam string) Mi
 	})
 }
 
-func CheckAccepts(accepts []string) MiddlewareFunc {
+func CheckAccepts(o *Operation) MiddlewareFunc {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
 			// enc, err := getEncodingFromAccept(accepts, c.Request)
@@ -105,10 +105,10 @@ func CheckAccepts(accepts []string) MiddlewareFunc {
 	})
 }
 
-func ValidateParams(params *Params) MiddlewareFunc {
+func CheckParams(o *Operation) MiddlewareFunc {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
-
+			params := o.GetAllParams()
 			var errs *validation.Error
 
 			q := c.URL.Query()
@@ -120,7 +120,7 @@ func ValidateParams(params *Params) MiddlewareFunc {
 			if params.ContainsBodyParams() {
 				c.ParseForm()
 			}
-			for _, p := range params.Get() {
+			for _, p := range params.GetAll() {
 				var pv *validation.Value
 				if p.IsIn(IN_QUERY) {
 					v, ok := q[p.name]
