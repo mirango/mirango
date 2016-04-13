@@ -63,7 +63,7 @@ func (m *Mirango) AddRoute(r *Route) *Route {
 }
 
 func (m *Mirango) Path(path string) *Mirango {
-	m.route.SetPath(path)
+	m.route.Path(path)
 	return m
 }
 
