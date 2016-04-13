@@ -6,7 +6,6 @@ import (
 
 	"github.com/mirango/defaults"
 	"github.com/mirango/framework"
-	"github.com/mirango/mirango/internal/util"
 	"github.com/mirango/validation"
 )
 
@@ -29,7 +28,7 @@ func CheckSchemes(schemes []string) MiddlewareFunc {
 				c.URL.Scheme = framework.SCHEME_HTTP
 			}
 
-			schemeAccepted = util.ContainsString(schemes, c.URL.Scheme)
+			schemeAccepted = containsString(o.GetAllSchemes(), c.URL.Scheme)
 			if !schemeAccepted {
 				return nil
 			}
@@ -55,7 +54,7 @@ func getEncodingFromAccept(returns []string, r *Request) (string, *Error) {
 				break
 			}
 		} else {
-			if util.ContainsString(returns, mime) {
+			if containsString(returns, mime) {
 				encoding = mime
 				break
 			}
