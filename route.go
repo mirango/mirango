@@ -382,23 +382,16 @@ func (r *Route) GetAllReturns() []string {
 }
 
 func (r *Route) ServeHTTP(c *Context, params pathParams) interface{} {
-	for _, o := range r.operations.operations {
-		for _, m := range o.methods {
-			if m == c.Request.Request.Method {
-				err := setPathParams(c, o.params, params)
-				if err != nil {
-					return err
-				}
-				return o.ServeHTTP(c)
-			}
-		}
+	o := r.operations.GetByMethod(c.Request.Request.Method)
+	if o == nil {
+		return nil
+		// method not allowed
 	}
-	// method not allowed
-	return nil
+	return o.ServeHTTP(c)
 }
 
 func setPathParams(c *Context, params *Params, pathParams pathParams) *Error {
-	for _, p := range params.Get() {
+	for _, p := range params.GetAll() {
 		var pv *validation.Value
 		if p.IsIn(IN_PATH) {
 			var v string
