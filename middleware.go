@@ -114,10 +114,10 @@ func CheckParams(o *Operation) MiddlewareFunc {
 			q := c.URL.Query()
 			h := c.Request.Header
 
-			if params.ContainsFiles() {
+			if params.containsFiles {
 				c.ParseMultipartForm(defaults.MaxMemory)
 			}
-			if params.ContainsBodyParams() {
+			if params.containsBodyParams {
 				c.ParseForm()
 			}
 			for _, p := range params.GetAll() {
@@ -130,6 +130,11 @@ func CheckParams(o *Operation) MiddlewareFunc {
 								errs = &validation.Error{}
 							}
 							errs.Append(p.name, fmt.Errorf("param %s is required", p.name))
+							if !p.IsMultiple() {
+								pv = validation.NewValue(p.name, "", "query", p.GetAs())
+							} else {
+								pv = validation.NewMultipleValue(p.name, []string{""}, "query", p.GetAs())
+							}
 						}
 					} else {
 						if !p.IsMultiple() {
@@ -146,6 +151,11 @@ func CheckParams(o *Operation) MiddlewareFunc {
 								errs = &validation.Error{}
 							}
 							errs.Append(p.name, fmt.Errorf("param %s is required", p.name))
+							if !p.IsMultiple() {
+								pv = validation.NewValue(p.name, "", "header", p.GetAs())
+							} else {
+								pv = validation.NewMultipleValue(p.name, []string{""}, "header", p.GetAs())
+							}
 						}
 					} else {
 						if !p.IsMultiple() {
@@ -187,6 +197,11 @@ func CheckParams(o *Operation) MiddlewareFunc {
 									errs = &validation.Error{}
 								}
 								errs.Append(p.name, fmt.Errorf("param %s is required", p.name))
+								if !p.IsMultiple() {
+									pv = validation.NewValue(p.name, "", "body", p.GetAs())
+								} else {
+									pv = validation.NewMultipleValue(p.name, []string{""}, "body", p.GetAs())
+								}
 							}
 						} else {
 							if !p.IsMultiple() {
