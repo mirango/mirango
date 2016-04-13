@@ -336,6 +336,22 @@ func (o *Operation) ServeHTTP(c *Context) interface{} {
 	return o.handler.ServeHTTP(c)
 }
 
+func (o *Operation) Clone() *Operation {
+	no := NewOperation(nil, o.handler)
+
+	no.methods = o.methods
+	no.schemes = o.schemes
+	no.accepts = o.accepts
+	no.returns = o.returns
+	no.middleware = o.middleware
+	no.params = o.params.Clone()
+	no.renders = o.renders
+	no.mimeTypeIn = o.mimeTypeIn
+	no.mimeTypeParam = o.mimeTypeParam
+
+	return no
+}
+
 type middlewareContainer struct {
 	middleware []interface{}
 }
