@@ -57,7 +57,7 @@ func (r *Request) Sessions() framework.Sessions {
 	return r.sessions
 }
 
-func (r *Request) Session(name string) (framework.Session, error) {
+func (r *Request) Session(name string) framework.Session {
 	return r.sessions.Get(name)
 }
 
