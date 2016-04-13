@@ -26,7 +26,7 @@ func NewContext(res *Response, req *Request) *Context {
 	}
 }
 
-func (c *Context) Id() int64 {
+func (c *Context) ID() int64 {
 	return c.id
 }
 
