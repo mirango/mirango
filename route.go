@@ -302,6 +302,17 @@ func (r *Route) Params(params ...*Param) *Route {
 	return r
 }
 
+func (r *Route) GetMiddleware() []Middleware {
+	return r.middleware
+}
+
+func (r *Route) GetAllMiddleware() []Middleware {
+	if r.parent != nil {
+		return middlewareUnion(r.middleware, r.parent.GetAllMiddleware())
+	}
+	return r.middleware
+}
+
 func (r *Route) GetParams() *Params {
 	return r.params
 }
@@ -312,6 +323,39 @@ func (r *Route) GetAllParams() *Params {
 		params.Union(r.parent.GetAllParams())
 	}
 	return params
+}
+
+func (r *Route) GetSchemes() []string {
+	return r.schemes
+}
+
+func (r *Route) GetAllSchemes() []string {
+	if r.parent != nil {
+		return stringsUnion(r.schemes, r.parent.GetAllSchemes())
+	}
+	return r.schemes
+}
+
+func (r *Route) GetAccepts() []string {
+	return r.accepts
+}
+
+func (r *Route) GetAllAccepts() []string {
+	if r.parent != nil {
+		return stringsUnion(r.accepts, r.parent.GetAllAccepts())
+	}
+	return r.accepts
+}
+
+func (r *Route) GetReturns() []string {
+	return r.returns
+}
+
+func (r *Route) GetAllReturns() []string {
+	if r.parent != nil {
+		return stringsUnion(r.returns, r.parent.GetAllReturns())
+	}
+	return r.returns
 }
 
 func (r *Route) ServeHTTP(c *Context, params pathParams) interface{} {
