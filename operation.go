@@ -41,16 +41,39 @@ func (ops *Operations) Set(operations ...*Operation) {
 	ops.Append(operations...)
 }
 
-func (ops *Operations) Get() []*Operation {
+func (ops *Operations) Get(name string) *Operation {
+	return ops.operations[ops.index[name]]
+}
+
+func (ops *Operations) GetAll() []*Operation {
 	return ops.operations
+}
+
+func (ops *Operations) Union(nops *Operations) {
+	for _, o := range nops.operations {
+		ops.Append(o)
+	}
+}
+
+func (ops *Operations) Clone() *Operations {
+	nops := NewOperations()
+	nops.Union(ops)
+	return nops
 }
 
 func (ops *Operations) GetByIndex(i int) *Operation {
 	return ops.operations[i]
 }
 
-func (ops *Operations) GetByName(name string) *Operation {
-	return ops.operations[ops.index[name]]
+func (ops *Operations) GetByMethod(method string) *Operation {
+	for _, o := range ops.operations {
+		for _, m := range o.methods {
+			if m == method {
+				return o
+			}
+		}
+	}
+	return nil
 }
 
 func (ops *Operations) Len() int {
