@@ -1,22 +1,22 @@
 // Mirango is a conveniently smart web framework that is built with reusibility and easiness in mind.
 //
 // Mirango supports the following handler types:
-// mirango.Handler
-// mirango.HandlerFunc
-// func(*Context) interface{}
-// func(*Context)
-// framework.Handler
-// framework.HandlerFunc
-// func(framework.Context) interface{}
-// func(framework.Context)
-// func(*Response, *Request) interface{}
-// func(*Response, *Request)
-// func(framework.Response, framework.Request) interface{}
-// func(framework.Response, framework.Request)
-// http.Handler
-// http.HandlerFunc
-// func(http.ResponseWriter, *http.Request) interface{}
-// func(http.ResponseWriter, *http.Request)
+//	mirango.Handler
+//	mirango.HandlerFunc
+//	func(*Context) interface{}
+//	func(*Context)
+//	framework.Handler
+//	framework.HandlerFunc
+//	func(framework.Context) interface{}
+//	func(framework.Context)
+//	func(*Response, *Request) interface{}
+//	func(*Response, *Request)
+//	func(framework.Response, framework.Request) interface{}
+//	func(framework.Response, framework.Request)
+//	http.Handler
+//	http.HandlerFunc
+//	func(http.ResponseWriter, *http.Request) interface{}
+//	func(http.ResponseWriter, *http.Request)
 //
 package mirango
 
