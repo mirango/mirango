@@ -28,7 +28,11 @@ func NewParams() *Params {
 	}
 }
 
-func (p *Params) Get() map[string]*Param {
+func (p *Params) Get(name string) *Param {
+	return p.params[name]
+}
+
+func (p *Params) GetAll() map[string]*Param {
 	return p.params
 }
 
@@ -49,13 +53,14 @@ func (p *Params) Append(params ...*Param) {
 		if _, ok := p.params[name]; ok {
 			panic(fmt.Sprintf("Detected 2 params with the same name: \"%s\".", name))
 		}
+		// check if contains files or body params
 		p.params[name] = params[i]
 	}
 }
 
 func (p *Params) Union(params *Params) {
-	for _, p := range params.params {
-		params.Append(p)
+	for _, pa := range params.params {
+		p.Append(pa)
 	}
 }
 
