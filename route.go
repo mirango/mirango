@@ -214,18 +214,18 @@ func (r *Route) Sort() {
 
 }
 
-func (r *Route) Path() string {
+func (r *Route) GetPath() string {
 	return r.path
 }
 
-func (r *Route) FullPath() string {
+func (r *Route) GetFullPath() string {
 	if r.parent == nil {
 		return r.path
 	}
-	return r.parent.FullPath() + r.path
+	return r.parent.GetFullPath() + r.path
 }
 
-func (r *Route) SetPath(path string) {
+func (r *Route) Path(path string) {
 	r.path = cleanPath(path)
 }
 
