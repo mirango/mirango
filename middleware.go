@@ -66,8 +66,8 @@ func getEncodingFromAccept(returns []string, r *Request) (string, *Error) {
 	}
 
 	if len(encoding) == 0 {
-		// return encoding, NewError(406, "Request", "Encoding requested not valid.")
 		encoding = defaults.MimeType
+		return encoding, NewError(406, "Request", "Encoding requested not valid.")
 	}
 
 	return encoding, nil
@@ -78,10 +78,10 @@ func CheckReturns(o *Operation) MiddlewareFunc {
 		return HandlerFunc(func(c *Context) interface{} {
 			// if mimeInAccept {
 			enc, err := getEncodingFromAccept(o.GetAllReturns(), c.Request)
+			c.encoding = enc
 			if err != nil {
 				return err
 			}
-			c.encoding = enc
 			// } else {
 			//
 			// }
