@@ -118,8 +118,12 @@ func (r *Route) match(path string) (nr *Route, p pathParams) {
 
 	if r.parent == nil {
 		nPath := r.path
-		if !strings.HasPrefix(path, nPath) {
-			r = nil
+		if nPath == path {
+			nr = r
+			p = nil
+			return
+		} else if !strings.HasPrefix(path, nPath) || len(nPath) > len(path) {
+			nr = nil
 			p = nil
 			return
 		}
