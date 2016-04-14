@@ -123,7 +123,7 @@ func (m *Mirango) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		data := route.ServeHTTP(c, params)
 		// check data type
 		if !c.ended {
-			err := c.sessions.Save(r, w)
+			err := c.sessions.Save(r, nw)
 			if err != nil {
 				return
 			}
