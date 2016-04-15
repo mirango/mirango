@@ -17,7 +17,7 @@ type Route struct {
 	returns                 []string
 	middleware              []Middleware
 	params                  *Params
-	routeNotFoundHandler    Handler
+	notFoundHandler         Handler
 	methodNotAllowedHandler Handler
 	panicHandler            Handler
 
@@ -107,8 +107,52 @@ func (r *Route) processPath() {
 	// check all paths
 }
 
-func (r *Route) GetNotFoundHandler() interface{} {
-	return nil
+func (r *Route) GetNotFoundHandler() Handler {
+	if r.parent != nil && r.notFoundHandler == nil {
+		return r.parent.GetNotFoundHandler()
+	}
+	return r.notFoundHandler
+}
+
+func (r *Route) GetMethodNotAllowedHandler() Handler {
+	if r.parent != nil && r.methodNotAllowedHandler == nil {
+		return r.parent.GetMethodNotAllowedHandler()
+	}
+	return r.methodNotAllowedHandler
+}
+
+func (r *Route) GetPanicHandler() Handler {
+	if r.parent != nil && r.panicHandler == nil {
+		return r.parent.GetPanicHandler()
+	}
+	return r.panicHandler
+}
+
+func (r *Route) NotFoundHandler(h interface{}) *Route {
+	handler, err := handler(h)
+	if err != nil {
+		panic(err.Error())
+	}
+	r.notFoundHandler = handler
+	return r
+}
+
+func (r *Route) MethodNotAllowedHandler(h interface{}) *Route {
+	handler, err := handler(h)
+	if err != nil {
+		panic(err.Error())
+	}
+	r.methodNotAllowedHandler = handler
+	return r
+}
+
+func (r *Route) PanicHandler(h interface{}) *Route {
+	handler, err := handler(h)
+	if err != nil {
+		panic(err.Error())
+	}
+	r.panicHandler = handler
+	return r
 }
 
 func (r *Route) match(path string) (nr *Route, p pathParams) {
