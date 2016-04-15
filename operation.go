@@ -98,6 +98,10 @@ type Operation struct {
 	allSchemes []string
 	allAccepts []string
 	allReturns []string
+
+	returnsOnly bool
+	acceptsOnly bool
+	schemesOnly bool
 }
 
 func NewOperation(r *Route, h interface{}) *Operation {
@@ -202,7 +206,7 @@ func (o *Operation) Methods(methods ...string) *Operation {
 }
 
 func (o *Operation) Params(params ...*Param) *Operation {
-	o.params.Set(params...)
+	o.params.Set(params...) // make it append instead of set
 	return o
 }
 
@@ -222,17 +226,38 @@ func (o *Operation) GetAllParams() *Params {
 }
 
 func (o *Operation) Schemes(schemes ...string) *Operation {
-	o.schemes = schemes
+	o.schemes = append(o.schemes, schemes...)
+	o.schemesOnly = false
 	return o
 }
 
 func (o *Operation) Accepts(accepts ...string) *Operation {
-	o.accepts = accepts
+	o.accepts = append(o.accepts, accepts...)
+	o.acceptsOnly = false
 	return o
 }
 
 func (o *Operation) Returns(returns ...string) *Operation {
+	o.returns = append(o.returns, returns...)
+	o.returnsOnly = false
+	return o
+}
+
+func (o *Operation) SchemesOnly(schemes ...string) *Operation {
+	o.schemes = schemes
+	o.schemesOnly = true
+	return o
+}
+
+func (o *Operation) AcceptsOnly(accepts ...string) *Operation {
+	o.accepts = accepts
+	o.acceptsOnly = true
+	return o
+}
+
+func (o *Operation) ReturnsOnly(returns ...string) *Operation {
 	o.returns = returns
+	o.returnsOnly = true
 	return o
 }
 
@@ -280,7 +305,10 @@ func (o *Operation) GetAllSchemes() []string {
 	if o.allSchemes != nil {
 		return o.allSchemes
 	}
-	schemes := stringsUnion(o.schemes, o.route.GetAllSchemes())
+	schemes := o.schemes
+	if !o.schemesOnly {
+		schemes = stringsUnion(schemes, o.route.GetAllSchemes())
+	}
 	o.allSchemes = schemes
 	o.schemes = nil
 	return schemes
@@ -294,7 +322,10 @@ func (o *Operation) GetAllAccepts() []string {
 	if o.allAccepts != nil {
 		return o.allAccepts
 	}
-	accepts := stringsUnion(o.accepts, o.route.GetAllAccepts())
+	accepts := o.accepts
+	if !o.acceptsOnly {
+		accepts = stringsUnion(accepts, o.route.GetAllAccepts())
+	}
 	o.allAccepts = accepts
 	o.accepts = nil
 	return accepts
@@ -308,7 +339,10 @@ func (o *Operation) GetAllReturns() []string {
 	if o.allReturns != nil {
 		return o.allReturns
 	}
-	returns := stringsUnion(o.returns, o.route.GetAllReturns())
+	returns := o.returns
+	if !o.returnsOnly {
+		returns = stringsUnion(returns, o.route.GetAllReturns())
+	}
 	o.allReturns = returns
 	o.returns = nil
 	return returns
@@ -327,12 +361,12 @@ func (o *Operation) GetFullPath() string {
 }
 
 func (o *Operation) ServeHTTP(c *Context) interface{} {
+	c.operation = o
 	if o.middleware != nil {
 		o.middleware = o.GetAllMiddleware()
 		o.with()
 		o.middleware = nil
 	}
-	c.operation = o
 	return o.handler.ServeHTTP(c)
 }
 
