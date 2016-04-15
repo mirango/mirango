@@ -3,6 +3,7 @@ package mirango
 import (
 	"strings"
 
+	"github.com/mirango/errors"
 	"github.com/mirango/validation"
 )
 
@@ -445,6 +446,7 @@ func (r *Route) GetAllReturns() []string {
 }
 
 func (r *Route) ServeHTTP(c *Context, params pathParams) interface{} {
+	c.route = r
 	err := setPathParams(c, r.GetAllParams(), params)
 	if err != nil {
 		return err
@@ -452,8 +454,15 @@ func (r *Route) ServeHTTP(c *Context, params pathParams) interface{} {
 
 	o := r.operations.GetByMethod(c.Request.Request.Method)
 	if o == nil {
-		return nil
-		// method not allowed
+		c.Response.encoding, err = getEncodingFromAccept(r.GetAllReturns(), c.Request)
+		if err != nil {
+			return err
+		}
+		mnaHandler := r.GetMethodNotAllowedHandler()
+		if mnaHandler == nil {
+			return errors.StatusMethodNotAllowed
+		}
+		return mnaHandler.ServeHTTP(c)
 	}
 	return o.ServeHTTP(c)
 }
