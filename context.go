@@ -10,6 +10,7 @@ type Context struct {
 	framework.LogWriter
 	*Response
 	*Request
+	route     *Route
 	operation *Operation
 	id        int64
 	values    framework.Values

@@ -9,7 +9,6 @@ import (
 type Request struct {
 	*http.Request
 	Input    framework.ParamValues
-	route    *Route
 	sessions framework.Sessions
 }
 
