@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/mirango/defaults"
+	"github.com/mirango/errors"
 	"github.com/mirango/framework"
 	"github.com/mirango/validation"
 )
@@ -38,7 +39,7 @@ func CheckSchemes(o *Operation) MiddlewareFunc {
 	})
 }
 
-func getEncodingFromAccept(returns []string, r *Request) (string, *Error) {
+func getEncodingFromAccept(returns []string, r *Request) (string, *errors.Error) {
 	var encoding string
 
 	parts := strings.Split(r.Header.Get(framework.HEADER_Accept), ",")
@@ -67,7 +68,7 @@ func getEncodingFromAccept(returns []string, r *Request) (string, *Error) {
 
 	if len(encoding) == 0 {
 		encoding = defaults.MimeType
-		return encoding, NewError(406, "Request", "Encoding requested not valid.")
+		return encoding, errors.New(406, "Encoding requested not valid.")
 	}
 
 	return encoding, nil

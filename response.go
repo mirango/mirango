@@ -146,6 +146,7 @@ func (w *Response) StreamAsXml(status int, d time.Duration, f func(int64) (inter
 func (w *Response) Render(c *Context, data interface{}) error {
 	renderer := w.renderers.Get(w.encoding)
 	if renderer != nil {
+		// check data type
 		b, err := renderer.Render(c, data)
 		if err != nil {
 			return err

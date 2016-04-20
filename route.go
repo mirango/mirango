@@ -1,6 +1,7 @@
 package mirango
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/mirango/errors"
@@ -460,14 +461,14 @@ func (r *Route) ServeHTTP(c *Context, params pathParams) interface{} {
 		}
 		mnaHandler := r.GetMethodNotAllowedHandler()
 		if mnaHandler == nil {
-			return errors.StatusMethodNotAllowed
+			return errors.New(http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed))
 		}
 		return mnaHandler.ServeHTTP(c)
 	}
 	return o.ServeHTTP(c)
 }
 
-func setPathParams(c *Context, params *Params, pathParams pathParams) *Error {
+func setPathParams(c *Context, params *Params, pathParams pathParams) *errors.Error {
 	for _, p := range params.GetAll() {
 		var pv *validation.Value
 		if p.IsIn(IN_PATH) {
