@@ -9,9 +9,12 @@ import (
 )
 
 type Route struct {
-	mirango                 *Mirango
-	parent                  *Route
-	children                Routes
+	mirango *Mirango
+
+	node *node
+
+	parent *Route
+
 	operations              *Operations
 	path                    string
 	schemes                 []string
@@ -22,92 +25,155 @@ type Route struct {
 	notFoundHandler         Handler
 	methodNotAllowedHandler Handler
 	panicHandler            Handler
-
-	slices           []string
-	paramIndices     map[int]int
-	paramNames       []string
-	containsWildCard bool
 }
 
-type Routes []*Route
-
-func (r Routes) Len() int {
-	return len(r)
-}
-
-func (r Routes) Swap(i int, j int) {
-	r[i], r[j] = r[j], r[i]
-}
-
-func (r Routes) Less(i int, j int) bool {
-	if r[i].containsWildCard && !r[j].containsWildCard {
-		return false
+func createNodes(parts []string, names []string, indices []int, typs []int, cs bool) *node {
+	var pNode *node
+	var node *node
+	for i, part := range parts {
+		node = newNode(part)
+		node.caseSensitive = cs
+		node.setParam(names[i], indices[i], typs[i] == 1)
+		if pNode != nil {
+			pNode.addNode(node)
+		}
+		pNode = node
 	}
-	if !r[i].containsWildCard && r[j].containsWildCard {
-		return true
-	}
-	if r[i].containsWildCard && r[j].containsWildCard {
-		// check position of wildcard
-	}
-	return false
+	return node
 }
 
-func NewRoute(path string) *Route {
-	return &Route{
-		path:         cleanPath(path),
-		operations:   NewOperations(),
-		params:       NewParams(),
-		paramIndices: map[int]int{},
+func NewRoute(path interface{}) *Route {
+	cs := false
+	var nPath string
+
+	switch p := path.(type) {
+	case CaseSensitive:
+		cs = true
+		nPath = string(p)
+	case string:
+		nPath = p
+	default:
+		panic("invalid path")
 	}
-}
 
-type pathParam struct {
-	Key   string
-	Value string
-}
+	slices := splitPath(nPath)
+	parts, names, indices, typs := processPath(slices)
+	node := createNodes(parts, names, indices, typs, cs)
 
-type pathParams []*pathParam
-
-func (r *Route) GetRoot() *Route {
-	if r.parent != nil {
-		return r.parent.GetRoot()
+	route := &Route{
+		node:       node,
+		path:       "/" + strings.Join(slices, "/"),
+		operations: NewOperations(),
+		params:     NewParams(),
 	}
-	return r
+
+	node.route = route
+
+	return route
 }
 
-func (r *Route) processPath() {
-	//path := r.path
-	r.paramNames = nil
-	r.paramIndices = map[int]int{}
-	slices := strings.Split(r.path[1:], "/")
+type CaseSensitive string
+
+func (r *Route) Branch(path interface{}) *Route {
+	route := NewRoute(path)
+	return r.AddRoute(route)
+}
+
+func (r *Route) AddRoute(route *Route) *Route {
+
+	if route == nil {
+		panic("route is nil")
+	}
+
+	if route.parent != nil {
+		route = route.Clone()
+	}
+
+	r.node.addNode(route.getTopNode())
+	//r.node.compareNodes()
+
+	if r.node.hasWildcard {
+		panic("wildcard routes can not have sub-routes")
+	}
+
+	route.parent = r
+
+	route.mirango = r.mirango
+	return route
+}
+
+func (r *Route) getTopNode() *node {
+	if r.parent == nil {
+		return r.node.getRoot()
+	}
+	return r.parent.node.subtract(r.node)
+}
+
+func (r *Route) Clone() *Route {
+	// route := NewRoute(r.path)
+	// for _, cr := range rs {
+	// 	route.AddRoute(cr.Copy())
+	// }
+	// route.path = r.path
+	// route.operations = r.operations
+	// route.params = r.params
+	// route.middleware = r.middleware
+	return nil
+}
+
+func processPath(slices []string) (parts []string, names []string, indices []int, typs []int) {
 
 	if len(slices) == 0 {
 		panic("path is empty")
 	}
 
-	r.slices = slices
-
-	// check that every var name has length more than 0
-
 	for i, s := range slices {
-		param := strings.LastIndex(s, ":")
-		wildcardParam := strings.LastIndex(s, "*")
-		if param > wildcardParam {
-			r.paramNames = append(r.paramNames, s[param+1:])
-			r.paramIndices[i] = param
-		} else if param < wildcardParam && i == len(slices)-1 {
-			r.paramNames = append(r.paramNames, s[wildcardParam+1:])
-			r.paramIndices[i] = wildcardParam
-			r.containsWildCard = true
-			r.children = nil
-		} else if param == -1 && wildcardParam == -1 {
-			r.paramIndices[i] = -1
-			continue
+		index := -1
+		typ := -1
+		colon := strings.LastIndex(s, ":")
+		wildcard := strings.LastIndex(s, "*")
+		if colon > wildcard {
+			index = colon
+			typ = 0
+		} else if colon < wildcard && i == len(slices)-1 {
+			index = wildcard
+			typ = 1
+		}
+
+		if index != -1 && index != len(s)-1 {
+			parts = append(parts, s[:index])
+			names = append(names, s[index+1:])
+		} else {
+			parts = append(parts, s)
+			names = append(names, "")
+		}
+		indices = append(indices, index)
+		typs = append(typs, typ)
+	}
+
+	return
+}
+
+func splitPath(path string) []string {
+	path = strings.Trim(path, "/")
+
+	if path == "" {
+		return []string{""}
+	}
+
+	slices := strings.Split(path, "/")
+	var nSlices []string
+
+	for _, s := range slices {
+		if len(s) > 0 {
+			nSlices = append(nSlices, s)
 		}
 	}
 
-	// check all paths
+	return nSlices
 }
+
+/// ----
 
 func (r *Route) GetNotFoundHandler() Handler {
 	if r.parent != nil && r.notFoundHandler == nil {
@@ -157,111 +223,8 @@ func (r *Route) PanicHandler(h interface{}) *Route {
 	return r
 }
 
-func (r *Route) match(path string) (nr *Route, p pathParams) {
-	route := r
-
-	params := 0
-
-	if r.parent == nil {
-		nPath := r.path
-		if nPath == path {
-			nr = r
-			p = nil
-			return
-		} else if !strings.HasPrefix(path, nPath) || len(nPath) > len(path) {
-			nr = nil
-			p = nil
-			return
-		}
-		path = path[len(nPath):]
-	}
-
-	slices := strings.Split(path[1:], "/")
-
-	param := -1
-	wildcardParam := -1
-
-look:
-	for _, c := range route.children {
-	walk:
-		for j := range c.slices {
-			param = -1
-			wildcardParam = -1
-			if c.containsWildCard {
-				if j == len(c.slices)-1 {
-					wildcardParam = c.paramIndices[j]
-				}
-			} else {
-				param = c.paramIndices[j]
-			}
-
-			if param == -1 && wildcardParam == -1 {
-				if c.slices[j] != slices[j] {
-					if j == len(slices)-1 && j == len(c.slices)-1 {
-						nr = nil
-						p = nil
-						return
-					}
-					continue look
-				} else {
-					if j == len(slices)-1 && j == len(c.slices)-1 {
-						nr = c
-						return
-					} else if j == len(c.slices)-1 {
-						route = c
-						slices = slices[j+1:]
-						params = 0
-						goto look
-					} else if j == len(slices)-1 {
-						nr = nil
-						p = nil
-						return
-					}
-					continue walk
-				}
-			} else if (param > wildcardParam && (len(slices[j]) <= param || slices[j][:param] != c.slices[j][:param])) ||
-				((param < wildcardParam) && (!c.containsWildCard || len(slices[j]) <= wildcardParam || slices[j][:wildcardParam] != c.slices[j][:wildcardParam])) {
-				continue look
-			} else if param > wildcardParam {
-				p = append(p, &pathParam{c.paramNames[params], slices[j][param:]})
-				params++
-				if j == len(slices)-1 && j == len(c.slices)-1 {
-					nr = c
-					return
-				} else if j == len(c.slices)-1 {
-					route = c
-					slices = slices[j+1:]
-					params = 0
-					goto look
-				} else if j == len(slices)-1 {
-					nr = nil
-					p = nil
-					return
-				}
-				continue walk
-			} else if param < wildcardParam {
-				p = append(p, &pathParam{c.paramNames[params], strings.TrimSuffix(slices[j][wildcardParam:]+"/"+strings.Join(slices[j+1:], "/"), "/")})
-				nr = c
-				return
-			}
-		}
-	}
-	return
-}
-
 func (r *Route) BuildPath(v ...interface{}) string {
 	return ""
-}
-
-func (r *Route) setMirango() {
-	rr := r.GetRoot()
-	if rr != nil {
-		r.mirango = rr.mirango
-	}
-}
-
-func (r *Route) Sort() {
-
 }
 
 func (r *Route) GetPath() string {
@@ -276,37 +239,7 @@ func (r *Route) GetFullPath() string {
 }
 
 func (r *Route) Path(path string) {
-	r.path = cleanPath(path)
-}
-
-func (r *Route) Branch(path string) *Route {
-	nr := NewRoute(path)
-	return r.AddRoute(nr)
-}
-
-func (r *Route) AddRoute(nr *Route) *Route {
-	if nr == nil {
-		panic("route is nil")
-	}
-
-	if nr.parent != nil {
-		nr = nr.Clone()
-	}
-
-	if r.containsWildCard {
-		panic("wildcard routes can not have sub-routes")
-	}
-
-	nr.parent = r
-
-	nr.processPath()
-
-	// check path
-
-	r.children = append(r.children, nr)
-
-	nr.setMirango()
-	return nr
+	// r.path = cleanPath(path)
 }
 
 func (r *Route) GET(h interface{}) *Operation {
@@ -340,20 +273,6 @@ func (r *Route) Operations(ops ...*Operation) *Route {
 		r.operations.Append(o)
 	}
 	return r
-}
-
-// Copy returns a pointer to a copy of the route.
-// It does not copy parent, operations, nor deep-copy the params.
-func (r *Route) Clone() *Route {
-	route := NewRoute(r.path)
-	// for _, cr := range rs {
-	// 	route.AddRoute(cr.Copy())
-	// }
-	// route.path = r.path
-	// route.operations = r.operations
-	// route.params = r.params
-	// route.middleware = r.middleware
-	return route
 }
 
 func (r *Route) Params(params ...*Param) *Route {
@@ -446,9 +365,9 @@ func (r *Route) GetAllReturns() []string {
 	return r.returns
 }
 
-func (r *Route) ServeHTTP(c *Context, params pathParams) interface{} {
+func (r *Route) ServeHTTP(c *Context, res result) interface{} {
 	c.route = r
-	err := setPathParams(c, r.GetAllParams(), params)
+	err := setPathParams(c, r.GetAllParams(), res)
 	if err != nil {
 		return err
 	}
@@ -468,38 +387,25 @@ func (r *Route) ServeHTTP(c *Context, params pathParams) interface{} {
 	return o.ServeHTTP(c)
 }
 
-func setPathParams(c *Context, params *Params, pathParams pathParams) *errors.Error {
-	for _, p := range params.GetAll() {
-		var pv *validation.Value
-		if p.IsIn(IN_PATH) {
-			var v string
-			for i, par := range pathParams {
-				if par.Key == p.name {
-					v = par.Value
-					pathParams = append(pathParams[:i], pathParams[i+1:]...)
-					break
-				}
-			}
-			if v == "" {
+func setPathParams(c *Context, params *Params, res result) *errors.Error {
+	var name string
+	var value string
+	var p *Param
+	var pv *validation.Value
+	if res.node.paramsCount > 0 {
+		for i := res.node.paramsCount - 1; i >= 0; i-- {
+			name, value = res.paramByIndex(i)
+			if name == "" || value == "" {
 				return nil //error
 			}
-			pv = validation.NewValue(p.name, v, "path", p.GetAs())
+			p = params.Get(name)
+			if p == nil || !p.IsIn(IN_PATH) {
+				return nil //error
+			}
+			pv = validation.NewValue(p.name, value, "path", p.GetAs())
 			c.Input[p.name] = pv
 		}
 	}
 	return nil
-}
-
-func cleanPath(path string) string {
-	path = strings.ToLower(path)
-	path = strings.Trim(path, "/")
-	slices := strings.Split(path, "/")
-	nPath := ""
-	for _, s := range slices {
-		if len(s) > 0 {
-			nPath = nPath + "/" + s
-		}
-	}
-	return nPath
 
 }

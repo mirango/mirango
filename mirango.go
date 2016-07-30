@@ -28,6 +28,7 @@ import (
 )
 
 type Mirango struct {
+	*node
 	*Route
 	server        framework.Server
 	renderers     framework.Renderers
@@ -40,6 +41,7 @@ func New() *Mirango {
 	m := &Mirango{
 		Route: r,
 	}
+	m.node = r.node.getRoot()
 	r.mirango = m
 	return m
 }
@@ -118,9 +120,9 @@ func (m *Mirango) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	route, params := m.Route.match(cleanPath(r.URL.Path)) // recommend redirection to standard path, tell if a match is found, otherwise return the latest found route
-	if route != nil {
-		data := route.ServeHTTP(c, params)
+	res, found, _ := m.node.match(r.URL.Path) // recommend redirection to standard path, tell if a match is found, otherwise return the latest found route
+	if found {
+		data := res.node.route.ServeHTTP(c, res)
 		// check data type
 		if !c.ended {
 			err := c.sessions.Save(r, nw)
