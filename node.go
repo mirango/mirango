@@ -8,6 +8,8 @@ type node struct {
 	route  *Route
 	parent *node
 
+	order int
+
 	index       int
 	hasWildcard bool
 
@@ -94,6 +96,11 @@ walk:
 			cs = i
 			if i != ps+1 {
 				if found && len(n.nodes) == 0 {
+					if n.hasWildcard {
+						found = true
+						res.node = n
+						return
+					}
 					found = false
 					res.node = n
 					return
@@ -107,6 +114,11 @@ walk:
 			cs = i
 			if i != ps+1 {
 				if found && len(n.nodes) == 0 {
+					if n.hasWildcard {
+						found = true
+						res.node = n
+						return
+					}
 					found = false
 					res.node = n
 					return
@@ -193,7 +205,29 @@ func (n *node) setParam(param string, index int, wildcard bool) {
 	n.hasWildcard = wildcard
 }
 
+func (n *node) setOrder() {
+	n.order = -1
+	node := n
+	for node != nil {
+		if (node.text != "" || node.index != -1) && !(node.text != "" && node.index != -1) {
+			n.order = n.order + 1
+		}
+		node = node.parent
+	}
+}
+
+func (n *node) finalize() {
+	n.setOrder()
+	for _, cn := range n.nodes {
+		cn.finalize()
+	}
+}
+
 func (n *node) addNode(on *node) {
+
+	if n.hasWildcard {
+		panic("cannot add a node to a node that has wildcard")
+	}
 
 	if on == nil {
 		panic("node is nil")
@@ -244,34 +278,8 @@ func (r *result) paramByName(name string) string {
 	if name == "" {
 		return ""
 	}
-
-	node := r.node
-
-	ps := len(r.path)
-	cs := ps
-	j := 0
-	for i := r.node.paramsCount - 1; i >= 0; {
-		for j = cs - 1; j >= 0; j-- {
-			if r.path[j] == '/' {
-
-				cs = ps
-				ps = j
-				if j != cs-1 && cs != ps {
-					break
-				}
-			}
-		}
-
-		if node.index != -1 {
-			if node.param == name {
-				break
-			}
-			i--
-		}
-		node = node.parent
-	}
-
-	return r.path[ps+1+r.node.index : cs]
+	_, value := r.paramByIndex(r.paramIndex(name))
+	return value
 }
 
 func (r *result) paramByIndex(idx int) (string, string) {
@@ -282,32 +290,43 @@ func (r *result) paramByIndex(idx int) (string, string) {
 
 	node := r.node
 
-	ps := len(r.path)
-	cs := ps
-	j := 0
+	steps := node.paramsCount - idx - 1
+	if steps < 0 {
+		return "", ""
+	}
 
-	for i := r.node.paramsCount - 1; i >= 0; {
-		for j = cs - 1; j >= 0; j-- {
-			if r.path[j] == '/' {
-
-				cs = ps
-				ps = j
-				if j != cs-1 && cs != ps {
-					break
-				}
-			}
-		}
-
+	for i := 0; i < steps; {
 		if node.index != -1 {
-			if i == idx {
-				break
-			}
-			i--
+			i++
 		}
 		node = node.parent
 	}
 
-	return node.param, r.path[ps+1+r.node.index : cs]
+	ps := 0
+	cs := ps
+	j := 0
+	for i := 0; i <= node.order; i++ {
+		for j = cs + 1; j < len(r.path)+1; j++ {
+			if j == len(r.path) {
+				ps = cs
+				cs = j
+				break
+			}
+			if r.path[j] == '/' {
+				ps = cs
+				cs = j
+				if j != ps+1 {
+					break
+				}
+			}
+
+		}
+	}
+
+	if !node.hasWildcard {
+		return node.param, r.path[ps+1+node.index : cs]
+	}
+	return node.param, r.path[ps+1+node.index:]
 }
 
 func sameNodes(cn *node, on *node) bool {

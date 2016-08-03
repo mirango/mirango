@@ -393,7 +393,7 @@ func setPathParams(c *Context, params *Params, res result) *errors.Error {
 	var p *Param
 	var pv *validation.Value
 	if res.node.paramsCount > 0 {
-		for i := res.node.paramsCount - 1; i >= 0; i-- {
+		for i := 0; i < res.node.paramsCount; i++ {
 			name, value = res.paramByIndex(i)
 			if name == "" || value == "" {
 				return nil //error
