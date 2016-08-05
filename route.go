@@ -110,14 +110,11 @@ func (r *Route) getTopNode() *node {
 }
 
 func (r *Route) Clone() *Route {
-	// route := NewRoute(r.path)
-	// for _, cr := range rs {
-	// 	route.AddRoute(cr.Copy())
-	// }
-	// route.path = r.path
-	// route.operations = r.operations
-	// route.params = r.params
-	// route.middleware = r.middleware
+	route := NewRoute(r.path)
+	route.path = r.path
+	route.operations = r.operations.Clone()
+	route.params = r.params
+	route.middleware = r.middleware
 	return nil
 }
 
@@ -243,27 +240,55 @@ func (r *Route) Path(path string) {
 }
 
 func (r *Route) GET(h interface{}) *Operation {
-	o := GET(r, h)
+	o := GET(h)
+	o.route = r
 	r.operations.Append(o)
 	return o
 }
 
 func (r *Route) POST(h interface{}) *Operation {
-	o := POST(r, h)
+	o := POST(h)
+	o.route = r
 	r.operations.Append(o)
 	return o
 }
 
 func (r *Route) PUT(h interface{}) *Operation {
-	o := PUT(r, h)
+	o := PUT(h)
+	o.route = r
 	r.operations.Append(o)
 	return o
 }
 
 func (r *Route) DELETE(h interface{}) *Operation {
-	o := DELETE(r, h)
+	o := DELETE(h)
+	o.route = r
 	r.operations.Append(o)
 	return o
+}
+
+func (r *Route) PathParam(name string) *Param {
+	p := PathParam(name)
+	r.params.Append(p)
+	return p
+}
+
+func (r *Route) QueryParam(name string) *Param {
+	p := QueryParam(name)
+	r.params.Append(p)
+	return p
+}
+
+func (r *Route) HeaderParam(name string) *Param {
+	p := HeaderParam(name)
+	r.params.Append(p)
+	return p
+}
+
+func (r *Route) BodyParam(name string) *Param {
+	p := BodyParam(name)
+	r.params.Append(p)
+	return p
 }
 
 func (r *Route) Operations(ops ...*Operation) *Route {
@@ -322,6 +347,10 @@ func (r *Route) GetAllMiddleware() []Middleware {
 
 func (r *Route) GetParams() *Params {
 	return r.params
+}
+
+func (r *Route) GetOperations() *Operations {
+	return r.operations
 }
 
 func (r *Route) GetAllParams() *Params {

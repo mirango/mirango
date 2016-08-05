@@ -104,7 +104,7 @@ type Operation struct {
 	schemesOnly bool
 }
 
-func NewOperation(r *Route, h interface{}) *Operation {
+func NewOperation(h interface{}) *Operation {
 	handler, err := handler(h)
 	if err != nil {
 		panic(err.Error())
@@ -112,7 +112,6 @@ func NewOperation(r *Route, h interface{}) *Operation {
 	o := &Operation{
 		methods: []string{"GET"},
 		handler: handler,
-		route:   r,
 		params:  NewParams(),
 		schemes: defaults.Schemes,
 		accepts: defaults.Accepts,
@@ -122,20 +121,20 @@ func NewOperation(r *Route, h interface{}) *Operation {
 	return o
 }
 
-func GET(r *Route, h interface{}) *Operation {
-	return NewOperation(r, h).Methods("GET")
+func GET(h interface{}) *Operation {
+	return NewOperation(h).Methods("GET")
 }
 
-func POST(r *Route, h interface{}) *Operation {
-	return NewOperation(r, h).Methods("POST")
+func POST(h interface{}) *Operation {
+	return NewOperation(h).Methods("POST")
 }
 
-func PUT(r *Route, h interface{}) *Operation {
-	return NewOperation(r, h).Methods("PUT")
+func PUT(h interface{}) *Operation {
+	return NewOperation(h).Methods("PUT")
 }
 
-func DELETE(r *Route, h interface{}) *Operation {
-	return NewOperation(r, h).Methods("DELETE")
+func DELETE(h interface{}) *Operation {
+	return NewOperation(h).Methods("DELETE")
 }
 
 func (o *Operation) Uses(h interface{}) *Operation { //interface
@@ -371,7 +370,7 @@ func (o *Operation) ServeHTTP(c *Context) interface{} {
 }
 
 func (o *Operation) Clone() *Operation {
-	no := NewOperation(nil, o.handler)
+	no := NewOperation(o.handler)
 
 	no.methods = o.methods
 	no.schemes = o.schemes
