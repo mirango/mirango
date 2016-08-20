@@ -36,8 +36,8 @@ type Mirango struct {
 	sessionStores []framework.SessionStore // add ability to make sessions on different stores
 }
 
-func New() *Mirango {
-	r := NewRoute("")
+func New(path interface{}) *Mirango {
+	r := NewRoute(path)
 	m := &Mirango{
 		Route: r,
 	}
@@ -116,6 +116,8 @@ func (m *Mirango) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	nw := NewResponse(w, m.renderers)
 	c := NewContext(nw, nr)
 
+	// defer log
+
 	if m.logger != nil {
 		c.LogWriter = m.logger.Logger(c)
 	}
@@ -127,6 +129,8 @@ func (m *Mirango) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for _, ss := range m.sessionStores {
 			ses, err = ss.GetAll(r)
 			if err != nil {
+				// log
+				c.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			c.sessions.Append(ses...)
@@ -134,19 +138,36 @@ func (m *Mirango) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, found, _ := m.node.match(r.URL.Path) // recommend redirection to standard path, tell if a match is found, otherwise return the latest found route
-	if found {
+	if found && res.node != nil && res.node.route != nil {
 		data := res.node.route.ServeHTTP(c, res)
 		// check data type
 		if !c.ended {
 			err := c.sessions.Save(r, nw)
 			if err != nil {
+				// log
+				c.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			err = nw.Render(c, data)
 			if err != nil {
+				// log
+				c.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 		}
 	} else {
+		if res.node != nil {
+			route := res.node.getRoute()
+			if route != nil {
+				h := route.GetNotFoundHandler()
+				if h != nil {
+					h.ServeHTTP(c)
+					return
+				}
+			}
+		}
+		c.WriteHeader(http.StatusNotFound)
 	}
+
+	//log response
 }
