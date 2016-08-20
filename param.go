@@ -53,6 +53,9 @@ func (p *Params) Append(params ...*Param) {
 		if _, ok := p.params[name]; ok {
 			panic(fmt.Sprintf("Detected 2 params with the same name: \"%s\".", name))
 		}
+		if params[i].isInBody {
+			p.containsBodyParams = true
+		}
 		// check if contains files or body params
 		p.params[name] = params[i]
 	}
@@ -268,7 +271,7 @@ func (p *Param) ValidateAll(c framework.Context, v framework.ParamValue) *valida
 		if errs == nil {
 			errs = &validation.Error{}
 		}
-		errs.Set(p.name, err)
+		errs.Set(p.name, err...)
 	}
 	return errs
 }
@@ -313,7 +316,7 @@ func (pa *Params) ValidateAll(c framework.Context, vs framework.ParamValues) *va
 			if errs == nil {
 				errs = &validation.Error{}
 			}
-			errs.Set(p.name, err)
+			errs.Set(p.name, err...)
 		}
 	}
 	return errs

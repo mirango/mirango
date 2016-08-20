@@ -130,7 +130,7 @@ func CheckParams(o *Operation) MiddlewareFunc {
 							if errs == nil {
 								errs = &validation.Error{}
 							}
-							errs.Append(p.name, fmt.Errorf("param %s is required", p.name))
+							errs.Append(p.name, validation.NewError("parameter is required"))
 							if !p.IsMultiple() {
 								pv = validation.NewValue(p.name, "", "query", p.GetAs())
 							} else {
@@ -151,7 +151,7 @@ func CheckParams(o *Operation) MiddlewareFunc {
 							if errs == nil {
 								errs = &validation.Error{}
 							}
-							errs.Append(p.name, fmt.Errorf("param %s is required", p.name))
+							errs.Append(p.name, validation.NewError("parameter is required"))
 							if !p.IsMultiple() {
 								pv = validation.NewValue(p.name, "", "header", p.GetAs())
 							} else {
@@ -173,7 +173,7 @@ func CheckParams(o *Operation) MiddlewareFunc {
 								if errs == nil {
 									errs = &validation.Error{}
 								}
-								errs.Append(p.name, fmt.Errorf("param %s is required", p.name))
+								errs.Append(p.name, validation.NewError("parameter is required"))
 							}
 						} else {
 							//pv = NewFileParamValue(p.name, v[0], "header")
@@ -185,7 +185,7 @@ func CheckParams(o *Operation) MiddlewareFunc {
 								if errs == nil {
 									errs = &validation.Error{}
 								}
-								errs.Append(p.name, fmt.Errorf("param %s is required", p.name))
+								errs.Append(p.name, validation.NewError("parameter is required"))
 							}
 						} else {
 							//pv = NewFileParamValue(p.name, v[0], "header")
