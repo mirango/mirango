@@ -193,6 +193,16 @@ func (n *node) getRoot() *node {
 	return n
 }
 
+func (n *node) getRoute() *Route {
+	if n.route != nil {
+		return n.route
+	}
+	if n.parent != nil {
+		return n.parent.getRoute()
+	}
+	return nil
+}
+
 func (n *node) setParam(param string, index int, wildcard bool) {
 	if index < 0 {
 		return
