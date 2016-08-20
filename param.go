@@ -162,10 +162,11 @@ func (p *Param) IsMultiple() bool {
 func (p *Param) As(as framework.ValueType) *Param {
 	if as == framework.TYPE_STRING ||
 		as == framework.TYPE_INT ||
-		as == framework.TYPE_INT64 ||
 		as == framework.TYPE_FLOAT ||
-		as == framework.TYPE_FLOAT64 ||
-		as == framework.TYPE_BOOL {
+		as == framework.TYPE_BOOL ||
+		as == framework.TYPE_UINT ||
+		as == framework.TYPE_COMPLEX ||
+		as == framework.TYPE_STRUCT {
 
 		p.as = as
 	}
