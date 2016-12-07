@@ -25,6 +25,8 @@ type Route struct {
 	notFoundHandler         Handler
 	methodNotAllowedHandler Handler
 	panicHandler            Handler
+
+	presets Presets
 }
 
 func createNodes(parts []string, names []string, indices []int, typs []int, cs bool) *node {
@@ -416,6 +418,10 @@ func (r *Route) ServeHTTP(c *Context, res result) interface{} {
 		return mnaHandler.ServeHTTP(c)
 	}
 	return o.ServeHTTP(c)
+}
+
+func (r *Route) Apply(p ...Preset) {
+	r.presets = append(r.presets, p...)
 }
 
 func setPathParams(c *Context, params *Params, res result) *errors.Error {

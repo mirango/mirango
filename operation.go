@@ -81,6 +81,18 @@ func (ops *Operations) GetByMethod(method string) *Operation {
 	return nil
 }
 
+func (ops *Operations) Apply(p ...Preset) {
+	for _, o := range ops.operations {
+		o.Apply(p...)
+	}
+}
+
+func (ops *Operations) finalize() {
+	for _, o := range ops.operations {
+		o.finalize()
+	}
+}
+
 func (ops *Operations) Len() int {
 	return len(ops.operations)
 }
@@ -179,9 +191,9 @@ func (o *Operation) with() {
 	o.handler = handler
 }
 
-func (o *Operation) Apply(temps ...func(*Operation)) *Operation {
-	for i := 0; i < len(temps); i++ {
-		temps[i](o)
+func (o *Operation) Apply(p ...Preset) *Operation {
+	for i := 0; i < len(p); i++ {
+		p[i].ApplyTo(o)
 	}
 	return o
 }
@@ -375,17 +387,39 @@ func (c middlewareContainer) Handle(operations ...*Operation) []*Operation {
 	return operations
 }
 
-type templateContainer struct {
-	templates []func(*Operation)
+type Preset interface {
+	ApplyTo(*Operation)
 }
 
-func Apply(temps ...func(*Operation)) *templateContainer {
-	return &templateContainer{templates: temps}
+type PresetFunc func(*Operation)
+
+func (f PresetFunc) ApplyTo(o *Operation) {
+	f(o)
 }
 
-func (c templateContainer) To(operations ...*Operation) []*Operation {
+type Presets []Preset
+
+func Apply(p ...Preset) Presets {
+	return Presets(p)
+}
+
+func (p Presets) To(operations ...*Operation) {
 	for i := 0; i < len(operations); i++ {
-		operations[i].Apply(c.templates...)
+		operations[i].Apply(p...)
 	}
-	return operations
+}
+
+func (p Presets) Union(o Presets) {
+	for _, oo := range o {
+		exists := false
+		for _, pp := range p {
+			if pp == oo {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			p = append(p, oo)
+		}
+	}
 }
