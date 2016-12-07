@@ -40,3 +40,17 @@ func middlewareUnion(a []Middleware, b []Middleware) []Middleware {
 	}
 	return a
 }
+
+func middlewareAppend(a []Middleware, bb Middleware) []Middleware {
+	exists := false
+	for _, aa := range a {
+		if aa == bb {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		a = append(a, bb)
+	}
+	return a
+}

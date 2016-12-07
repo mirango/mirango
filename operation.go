@@ -94,11 +94,6 @@ type Operation struct {
 	mimeTypeIn    paramIn
 	mimeTypeParam string
 
-	allParams  *Params
-	allSchemes []string
-	allAccepts []string
-	allReturns []string
-
 	returnsOnly bool
 	acceptsOnly bool
 	schemesOnly bool
@@ -161,11 +156,11 @@ func (o *Operation) With(mw ...interface{}) *Operation {
 	for i := 0; i < len(mw); i++ {
 		switch t := mw[i].(type) {
 		case Middleware:
-			o.middleware = append(o.middleware, t)
+			o.middleware = middlewareAppend(o.middleware, t)
 		case MiddlewareFunc:
-			o.middleware = append(o.middleware, t)
+			o.middleware = middlewareAppend(o.middleware, t)
 		case func(Handler) Handler:
-			o.middleware = append(o.middleware, MiddlewareFunc(t))
+			o.middleware = middlewareAppend(o.middleware, MiddlewareFunc(t))
 		}
 	}
 	return o
@@ -186,7 +181,7 @@ func (o *Operation) Apply(temps ...func(*Operation)) *Operation {
 	return o
 }
 
-func (o *Operation) Route() framework.Route {
+func (o *Operation) GetRoute() framework.Route {
 	return o.route
 }
 
@@ -213,15 +208,10 @@ func (o *Operation) GetParams() *Params {
 	return o.params
 }
 
-func (o *Operation) GetAllParams() *Params {
-	if o.allParams != nil {
-		return o.allParams
-	}
+func (o *Operation) getAllParams() {
 	params := o.params.Clone()
-	params.Union(o.route.GetAllParams())
-	o.allParams = params
-	o.params = nil
-	return params
+	params.Union(o.route.params)
+	o.params = params
 }
 
 func (o *Operation) Schemes(schemes ...string) *Operation {
@@ -292,59 +282,44 @@ func (o *Operation) GetMiddleware() []Middleware {
 	return o.middleware
 }
 
-func (o *Operation) GetAllMiddleware() []Middleware {
-	return middlewareUnion(o.middleware, o.route.GetAllMiddleware())
+func (o *Operation) getAllMiddleware() {
+	o.middleware = middlewareUnion(o.middleware, o.route.middleware)
 }
 
 func (o *Operation) GetSchemes() []string {
 	return o.methods
 }
 
-func (o *Operation) GetAllSchemes() []string {
-	if o.allSchemes != nil {
-		return o.allSchemes
-	}
+func (o *Operation) getAllSchemes() {
 	schemes := o.schemes
 	if !o.schemesOnly {
-		schemes = stringsUnion(schemes, o.route.GetAllSchemes())
+		schemes = stringsUnion(schemes, o.route.schemes)
 	}
-	o.allSchemes = schemes
-	o.schemes = nil
-	return schemes
+	o.schemes = schemes
 }
 
 func (o *Operation) GetAccepts() []string {
-	return o.methods
+	return o.accepts
 }
 
-func (o *Operation) GetAllAccepts() []string {
-	if o.allAccepts != nil {
-		return o.allAccepts
-	}
+func (o *Operation) getAllAccepts() {
 	accepts := o.accepts
 	if !o.acceptsOnly {
-		accepts = stringsUnion(accepts, o.route.GetAllAccepts())
+		accepts = stringsUnion(accepts, o.route.accepts)
 	}
-	o.allAccepts = accepts
-	o.accepts = nil
-	return accepts
+	o.accepts = accepts
 }
 
 func (o *Operation) GetReturns() []string {
-	return o.methods
+	return o.returns
 }
 
-func (o *Operation) GetAllReturns() []string {
-	if o.allReturns != nil {
-		return o.allReturns
-	}
+func (o *Operation) getAllReturns() {
 	returns := o.returns
 	if !o.returnsOnly {
-		returns = stringsUnion(returns, o.route.GetAllReturns())
+		returns = stringsUnion(returns, o.route.returns)
 	}
-	o.allReturns = returns
-	o.returns = nil
-	return returns
+	o.returns = returns
 }
 
 func (o *Operation) BuildPath(v ...interface{}) string {
@@ -361,11 +336,6 @@ func (o *Operation) GetFullPath() string {
 
 func (o *Operation) ServeHTTP(c *Context) interface{} {
 	c.operation = o
-	if o.middleware != nil {
-		o.middleware = o.GetAllMiddleware()
-		o.with()
-		o.middleware = nil
-	}
 	return o.handler.ServeHTTP(c)
 }
 

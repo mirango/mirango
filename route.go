@@ -338,11 +338,10 @@ func (r *Route) GetMiddleware() []Middleware {
 	return r.middleware
 }
 
-func (r *Route) GetAllMiddleware() []Middleware {
+func (r *Route) getAllMiddleware() {
 	if r.parent != nil {
-		return middlewareUnion(r.middleware, r.parent.GetAllMiddleware())
+		r.middleware = middlewareUnion(r.middleware, r.parent.middleware)
 	}
-	return r.middleware
 }
 
 func (r *Route) GetParams() *Params {
@@ -353,45 +352,48 @@ func (r *Route) GetOperations() *Operations {
 	return r.operations
 }
 
-func (r *Route) GetAllParams() *Params {
-	params := r.params.Clone()
+func (r *Route) getAllParams() {
 	if r.parent != nil {
-		params.Union(r.parent.GetAllParams())
+		params := r.params.Clone()
+		params.Union(r.parent.params)
+		r.params = params
 	}
-	return params
 }
 
 func (r *Route) GetSchemes() []string {
 	return r.schemes
 }
 
-func (r *Route) GetAllSchemes() []string {
+func (r *Route) getAllSchemes() {
 	if r.parent != nil {
-		return stringsUnion(r.schemes, r.parent.GetAllSchemes())
+		r.schemes = stringsUnion(r.schemes, r.parent.schemes)
 	}
-	return r.schemes
 }
 
 func (r *Route) GetAccepts() []string {
 	return r.accepts
 }
 
-func (r *Route) GetAllAccepts() []string {
+func (r *Route) getAllAccepts() {
 	if r.parent != nil {
-		return stringsUnion(r.accepts, r.parent.GetAllAccepts())
+		r.accepts = stringsUnion(r.accepts, r.parent.accepts)
 	}
-	return r.accepts
 }
 
 func (r *Route) GetReturns() []string {
 	return r.returns
 }
 
-func (r *Route) GetAllReturns() []string {
+func (r *Route) getAllReturns() {
 	if r.parent != nil {
-		return stringsUnion(r.returns, r.parent.GetAllReturns())
+		r.returns = stringsUnion(r.returns, r.parent.returns)
 	}
-	return r.returns
+}
+
+func (r *Route) getAllPresets() {
+	if r.parent != nil {
+		r.presets.Union(r.parent.presets)
+	}
 }
 
 func (r *Route) ServeHTTP(c *Context, res result) interface{} {

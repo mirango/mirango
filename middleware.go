@@ -29,7 +29,7 @@ func CheckSchemes(o *Operation) MiddlewareFunc {
 				c.URL.Scheme = framework.SCHEME_HTTP
 			}
 
-			schemeAccepted = containsString(o.GetAllSchemes(), c.URL.Scheme)
+			schemeAccepted = containsString(o.schemes, c.URL.Scheme)
 			if !schemeAccepted {
 				return nil
 			}
@@ -78,7 +78,7 @@ func CheckReturns(o *Operation) MiddlewareFunc {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
 			// if mimeInAccept {
-			enc, err := getEncodingFromAccept(o.GetAllReturns(), c.Request)
+			enc, err := getEncodingFromAccept(o.returns, c.Request)
 			c.encoding = enc
 			if err != nil {
 				return err
@@ -109,7 +109,7 @@ func CheckAccepts(o *Operation) MiddlewareFunc {
 func CheckParams(o *Operation) MiddlewareFunc {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
-			params := o.GetAllParams()
+			params := o.params
 			var errs *validation.Error
 
 			q := c.URL.Query()
