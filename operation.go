@@ -21,6 +21,11 @@ func NewOperations() *Operations {
 func (ops *Operations) Append(operations ...*Operation) {
 	le := len(ops.operations)
 	for i := 0; i < len(operations); i++ {
+		for _, method := range operations[i].methods {
+			if ops.GetByMethod(method) != nil {
+				panic(fmt.Sprintf("Detected 2 operations with the same method: \"%s\".", method))
+			}
+		}
 		name := operations[i].name
 		if name == "" {
 			ops.operations = append(ops.operations, operations[i])
