@@ -372,19 +372,16 @@ func (o *Operation) Clone() *Operation {
 	return no
 }
 
-type middlewareContainer struct {
-	middleware []interface{}
+type middleware []interface{}
+
+func With(mw ...interface{}) middleware {
+	return middleware(mw)
 }
 
-func With(mw ...interface{}) *middlewareContainer {
-	return &middlewareContainer{middleware: mw}
-}
-
-func (c middlewareContainer) Handle(operations ...*Operation) []*Operation {
+func (mw middleware) Handle(operations ...*Operation) {
 	for i := 0; i < len(operations); i++ {
-		operations[i].With(c.middleware...)
+		operations[i].With(mw...)
 	}
-	return operations
 }
 
 type Preset interface {
