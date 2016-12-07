@@ -233,6 +233,42 @@ func (n *node) finalize() {
 	}
 }
 
+func (n *node) getRoutedNode() *node {
+	if n.route != nil {
+		return n
+	}
+	nn := n
+	for len(n.nodes) > 0 && n.nodes[0].route == nil {
+		n = n.nodes[0]
+	}
+	if n.route != nil {
+		return n
+	}
+	for nn.parent != nil {
+		nn = nn.parent
+		if nn.route != nil {
+			return nn
+		}
+	}
+	return nil
+}
+
+func (n *node) getChildRoutes() (routes []*Route) {
+	n = n.getRoutedNode()
+	if n == nil || n.route == nil {
+		return
+	}
+	for _, cn := range n.nodes {
+		for len(cn.nodes) > 0 && cn.nodes[0].route == nil {
+			cn = cn.nodes[0]
+		}
+		if cn.route != nil {
+			routes = append(routes, cn.route)
+		}
+	}
+	return
+}
+
 func (n *node) addNode(on *node) {
 
 	if n.hasWildcard {

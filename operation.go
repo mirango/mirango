@@ -356,6 +356,16 @@ func (o *Operation) ServeHTTP(c *Context) interface{} {
 	return o.handler.ServeHTTP(c)
 }
 
+func (o *Operation) finalize() {
+	o.getAllSchemes()
+	o.getAllAccepts()
+	o.getAllReturns()
+	o.getAllParams()
+	o.getAllMiddleware()
+	o.Apply(o.route.presets...)
+	o.with()
+}
+
 func (o *Operation) Clone() *Operation {
 	no := NewOperation(o.handler)
 

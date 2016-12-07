@@ -78,16 +78,14 @@ func (m *Mirango) Server(s framework.Server) {
 	m.server = s
 }
 
-func (m *Mirango) Prepare() error {
+func (m *Mirango) Prepare() {
+	m.route.finalize()
 	m.node.finalize()
-	return nil
 }
 
 func (m *Mirango) Start(addr string) error {
-	err := m.Prepare()
-	if err != nil {
-		return err
-	}
+	m.Prepare()
+
 	if m.server == nil {
 		m.server = server.New()
 	}
@@ -98,10 +96,8 @@ func (m *Mirango) Start(addr string) error {
 }
 
 func (m *Mirango) StartTLS(addr string, certFile string, keyFile string) error {
-	err := m.Prepare()
-	if err != nil {
-		return err
-	}
+	m.Prepare()
+
 	if m.server == nil {
 		m.server = server.New()
 	}

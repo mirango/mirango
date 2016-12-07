@@ -424,6 +424,25 @@ func (r *Route) Apply(p ...Preset) {
 	r.presets = append(r.presets, p...)
 }
 
+func (r *Route) finalize() {
+	r.getAllParams()
+	r.getAllSchemes()
+	r.getAllAccepts()
+	r.getAllReturns()
+	r.getAllMiddleware()
+	r.getAllPresets()
+	for _, cr := range r.node.getChildRoutes() {
+		cr.finalize()
+	}
+	r.operations.finalize()
+	r.params = nil
+	r.schemes = nil
+	r.accepts = nil
+	r.returns = nil
+	r.middleware = nil
+	r.presets = nil
+}
+
 func setPathParams(c *Context, params *Params, res result) *errors.Error {
 	var name string
 	var value string
