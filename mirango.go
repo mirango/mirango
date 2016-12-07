@@ -50,10 +50,6 @@ func (m *Mirango) Renderers(r ...framework.Renderer) {
 	m.renderers.Append(r...)
 }
 
-func (m *Mirango) Optimize() {
-	// do optimization to routes and operations so that every object has what it needs
-}
-
 func (m *Mirango) Logger(l framework.Logger) {
 	m.logger = l
 }
@@ -66,11 +62,6 @@ func (m *Mirango) SessionStore(ss framework.SessionStore) {
 
 func (m *Mirango) Params(params ...*Param) *Mirango {
 	m.Route.Params(params...)
-	return m
-}
-
-func (m *Mirango) Path(path string) *Mirango {
-	m.Route.Path(path)
 	return m
 }
 
