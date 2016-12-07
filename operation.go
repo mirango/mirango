@@ -134,19 +134,73 @@ func NewOperation(h interface{}) *Operation {
 }
 
 func GET(h interface{}) *Operation {
-	return NewOperation(h).Methods("GET")
+	return GETNested(h, nil)
+}
+
+func GETNested(h interface{}, cb func(*Operation)) *Operation {
+	o := NewOperation(h).Methods("GET")
+
+	if cb != nil {
+		cb(o)
+	}
+
+	return o
 }
 
 func POST(h interface{}) *Operation {
-	return NewOperation(h).Methods("POST")
+	return POSTNested(h, nil)
+}
+
+func POSTNested(h interface{}, cb func(*Operation)) *Operation {
+	o := NewOperation(h).Methods("POST")
+
+	if cb != nil {
+		cb(o)
+	}
+
+	return o
 }
 
 func PUT(h interface{}) *Operation {
-	return NewOperation(h).Methods("PUT")
+	return PUTNested(h, nil)
+}
+
+func PUTNested(h interface{}, cb func(*Operation)) *Operation {
+	o := NewOperation(h).Methods("PUT")
+
+	if cb != nil {
+		cb(o)
+	}
+
+	return o
+}
+
+func PATCH(h interface{}) *Operation {
+	return PATCHNested(h, nil)
+}
+
+func PATCHNested(h interface{}, cb func(*Operation)) *Operation {
+	o := NewOperation(h).Methods("PATCH")
+
+	if cb != nil {
+		cb(o)
+	}
+
+	return o
 }
 
 func DELETE(h interface{}) *Operation {
-	return NewOperation(h).Methods("DELETE")
+	return DELETENested(h, nil)
+}
+
+func DELETENested(h interface{}, cb func(*Operation)) *Operation {
+	o := NewOperation(h).Methods("DELETE")
+
+	if cb != nil {
+		cb(o)
+	}
+
+	return o
 }
 
 func (o *Operation) Uses(h interface{}) *Operation { //interface

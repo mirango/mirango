@@ -22,6 +22,10 @@ type resourceUpdate interface {
 	Update(c *Context) interface{}
 }
 
+type resourcePatch interface {
+	Patch(c *Context) interface{}
+}
+
 type resourceDelete interface {
 	Delete(c *Context) interface{}
 }
@@ -29,9 +33,19 @@ type resourceDelete interface {
 type Resource struct {
 	Route       *Route
 	EntityRoute *Route
+	Index       *Operation
+	Create      *Operation
+	Get         *Operation
+	Update      *Operation
+	Patch       *Operation
+	Delete      *Operation
 }
 
-func NewResource(name string, path interface{}, re interface{}) *Resource {
+func NewResource(name string, re interface{}) *Resource {
+	return NewResourceNested(name, re, nil)
+}
+
+func NewResourceNested(name string, re interface{}, cb func(*Resource)) *Resource {
 	if re == nil {
 		panic("resource handler is nil")
 	}
@@ -41,38 +55,48 @@ func NewResource(name string, path interface{}, re interface{}) *Resource {
 		panic("invalid resource name")
 	}
 
+	route := NewRoute(name)
+
+	name = strings.ToLower(name)
+
 	paramName := inflector.Singularize(name) + "_id"
 
-	route := NewRoute(path)
 	eRoute := route.Branch(":" + paramName)
 
 	eRoute.PathParam(paramName)
 
 	foundOne := false
 
+	var index, create, get, update, patch, delete *Operation
+
 	if t, ok := re.(resourceIndex); ok {
 		foundOne = true
-		route.GET(t.Index).Name("get_" + inflector.Pluralize(name))
+		index = route.GET(t.Index).Name("get_" + inflector.Pluralize(name))
 	}
 
 	if t, ok := re.(resourceCreate); ok {
 		foundOne = true
-		route.POST(t.Create).Name("create_" + inflector.Singularize(name))
+		create = route.POST(t.Create).Name("create_" + inflector.Singularize(name))
 	}
 
 	if t, ok := re.(resourceGet); ok {
 		foundOne = true
-		eRoute.GET(t.Get).Name("get_" + inflector.Singularize(name))
+		get = eRoute.GET(t.Get).Name("get_" + inflector.Singularize(name))
 	}
 
 	if t, ok := re.(resourceUpdate); ok {
 		foundOne = true
-		eRoute.PUT(t.Update).Name("update_" + inflector.Singularize(name))
+		update = eRoute.PUT(t.Update).Name("update_" + inflector.Singularize(name))
+	}
+
+	if t, ok := re.(resourcePatch); ok {
+		foundOne = true
+		patch = eRoute.PATCH(t.Patch).Name("patch_" + inflector.Singularize(name))
 	}
 
 	if t, ok := re.(resourceDelete); ok {
 		foundOne = true
-		eRoute.DELETE(t.Delete).Name("delete_" + inflector.Singularize(name))
+		delete = eRoute.DELETE(t.Delete).Name("delete_" + inflector.Singularize(name))
 	}
 
 	if !foundOne {
@@ -82,14 +106,48 @@ func NewResource(name string, path interface{}, re interface{}) *Resource {
 	resource := &Resource{
 		Route:       route,
 		EntityRoute: eRoute,
+		Index:       index,
+		Create:      create,
+		Get:         get,
+		Update:      update,
+		Patch:       patch,
+		Delete:      delete,
+	}
+
+	if cb != nil {
+		cb(resource)
 	}
 
 	return resource
 }
 
-func (r *Route) Resource(name string, path interface{}, re interface{}) *Resource {
-	resource := NewResource(name, path, re)
-	r.AddResource(resource)
+func (r *Resource) Resource(name string, re interface{}) *Resource {
+	return r.ResourceNested(name, re, nil)
+}
+
+func (r *Resource) ResourceNested(name string, re interface{}, cb func(*Resource)) *Resource {
+	resource := NewResource(name, re)
+	resource = r.EntityRoute.AddResource(resource)
+
+	if cb != nil {
+		cb(resource)
+	}
+
+	return resource
+}
+
+func (r *Route) Resource(name string, re interface{}) *Resource {
+	return r.ResourceNested(name, re, nil)
+}
+
+func (r *Route) ResourceNested(name string, re interface{}, cb func(*Resource)) *Resource {
+	resource := NewResource(name, re)
+	resource = r.AddResource(resource)
+
+	if cb != nil {
+		cb(resource)
+	}
+
 	return resource
 }
 

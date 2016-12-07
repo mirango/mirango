@@ -45,6 +45,10 @@ func createNodes(parts []string, names []string, indices []int, typs []int, cs b
 }
 
 func NewRoute(path interface{}) *Route {
+	return NewRouteNested(path, nil)
+}
+
+func NewRouteNested(path interface{}, cb func(*Route)) *Route {
 	cs := false
 	var nPath string
 
@@ -71,14 +75,28 @@ func NewRoute(path interface{}) *Route {
 
 	node.route = route
 
+	if cb != nil {
+		cb(route)
+	}
+
 	return route
 }
 
 type CaseSensitive string
 
 func (r *Route) Branch(path interface{}) *Route {
+	return r.BranchNested(path, nil)
+}
+
+func (r *Route) BranchNested(path interface{}, cb func(*Route)) *Route {
 	route := NewRoute(path)
-	return r.AddRoute(route)
+	route = r.AddRoute(route)
+
+	if cb != nil {
+		cb(route)
+	}
+
+	return route
 }
 
 func (r *Route) AddRoute(route *Route) *Route {
@@ -87,16 +105,16 @@ func (r *Route) AddRoute(route *Route) *Route {
 		panic("route is nil")
 	}
 
+	if r.node.hasWildcard {
+		panic("wildcard routes can not have sub-routes")
+	}
+
 	if route.parent != nil {
 		route = route.Clone()
 	}
 
 	r.node.addNode(route.getTopNode())
 	//r.node.compareNodes()
-
-	if r.node.hasWildcard {
-		panic("wildcard routes can not have sub-routes")
-	}
 
 	route.parent = r
 
@@ -172,8 +190,6 @@ func splitPath(path string) []string {
 	return nSlices
 }
 
-/// ----
-
 func (r *Route) GetNotFoundHandler() Handler {
 	if r.parent != nil && r.notFoundHandler == nil {
 		return r.parent.GetNotFoundHandler()
@@ -237,35 +253,83 @@ func (r *Route) GetFullPath() string {
 	return r.parent.GetFullPath() + r.path
 }
 
-func (r *Route) Path(path string) {
-	// r.path = cleanPath(path)
+func (r *Route) GET(h interface{}) *Operation {
+	return r.GETNested(h, nil)
 }
 
-func (r *Route) GET(h interface{}) *Operation {
+func (r *Route) GETNested(h interface{}, cb func(*Operation)) *Operation {
 	o := GET(h)
 	o.route = r
 	r.operations.Append(o)
+
+	if cb != nil {
+		cb(o)
+	}
+
 	return o
 }
 
 func (r *Route) POST(h interface{}) *Operation {
+	return r.POSTNested(h, nil)
+}
+
+func (r *Route) POSTNested(h interface{}, cb func(*Operation)) *Operation {
 	o := POST(h)
 	o.route = r
 	r.operations.Append(o)
+
+	if cb != nil {
+		cb(o)
+	}
+
 	return o
 }
 
 func (r *Route) PUT(h interface{}) *Operation {
+	return r.PUTNested(h, nil)
+}
+
+func (r *Route) PUTNested(h interface{}, cb func(*Operation)) *Operation {
 	o := PUT(h)
 	o.route = r
 	r.operations.Append(o)
+
+	if cb != nil {
+		cb(o)
+	}
+
+	return o
+}
+
+func (r *Route) PATCH(h interface{}) *Operation {
+	return r.PATCHNested(h, nil)
+}
+
+func (r *Route) PATCHNested(h interface{}, cb func(*Operation)) *Operation {
+	o := PUT(h)
+	o.route = r
+	r.operations.Append(o)
+
+	if cb != nil {
+		cb(o)
+	}
+
 	return o
 }
 
 func (r *Route) DELETE(h interface{}) *Operation {
+	return r.DELETENested(h, nil)
+}
+
+func (r *Route) DELETENested(h interface{}, cb func(*Operation)) *Operation {
 	o := DELETE(h)
 	o.route = r
 	r.operations.Append(o)
+
+	if cb != nil {
+		cb(o)
+	}
+
 	return o
 }
 
@@ -400,14 +464,16 @@ func (r *Route) getAllPresets() {
 
 func (r *Route) ServeHTTP(c *Context, res result) interface{} {
 	c.route = r
-	err := setPathParams(c, r.GetAllParams(), res)
+
+	o := r.operations.GetByMethod(c.Request.Request.Method)
+
+	err := setPathParams(c, o.params, res)
 	if err != nil {
 		return err
 	}
 
-	o := r.operations.GetByMethod(c.Request.Request.Method)
 	if o == nil {
-		c.Response.encoding, err = getEncodingFromAccept(r.GetAllReturns(), c.Request)
+		c.Response.encoding, err = getEncodingFromAccept(r.returns, c.Request)
 		if err != nil {
 			return err
 		}
