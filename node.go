@@ -1,6 +1,7 @@
 package mirango
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -53,9 +54,11 @@ func (n nodes) Swap(i, j int) {
 func (n nodes) Less(i, j int) bool {
 	if n[j].index == -1 {
 		return true
-	} else if n[j].caseSensitive && !n[i].caseSensitive {
+	} else if n[i].caseSensitive && !n[j].caseSensitive {
 		return true
 	} else if n[i].text[0] < n[j].text[0] {
+		return true
+	} else if !n[i].hasWildcard && n[j].hasWildcard {
 		return true
 	}
 	return false
@@ -228,6 +231,7 @@ func (n *node) setOrder() {
 
 func (n *node) finalize() {
 	n.setOrder()
+	sort.Sort(n.nodes)
 	for _, cn := range n.nodes {
 		cn.finalize()
 	}
