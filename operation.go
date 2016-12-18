@@ -62,7 +62,9 @@ func (ops *Operations) Union(nops *Operations) {
 
 func (ops *Operations) Clone() *Operations {
 	nops := NewOperations()
-	nops.Union(ops)
+	for _, o := range ops.GetAll() {
+		nops.Append(o.Clone())
+	}
 	return nops
 }
 
@@ -107,7 +109,6 @@ type Operation struct {
 	returns       []string
 	middleware    []Middleware
 	params        *Params
-	renders       string
 	mimeTypeIn    paramIn
 	mimeTypeParam string
 
@@ -362,11 +363,9 @@ func (o *Operation) GetSchemes() []string {
 }
 
 func (o *Operation) getAllSchemes() {
-	schemes := o.schemes
 	if !o.schemesOnly {
-		schemes = stringsUnion(schemes, o.route.schemes)
+		o.schemes = stringsUnion(o.schemes, o.route.schemes)
 	}
-	o.schemes = schemes
 }
 
 func (o *Operation) GetAccepts() []string {
@@ -374,11 +373,9 @@ func (o *Operation) GetAccepts() []string {
 }
 
 func (o *Operation) getAllAccepts() {
-	accepts := o.accepts
 	if !o.acceptsOnly {
-		accepts = stringsUnion(accepts, o.route.accepts)
+		o.accepts = stringsUnion(o.accepts, o.route.accepts)
 	}
-	o.accepts = accepts
 }
 
 func (o *Operation) GetReturns() []string {
@@ -386,11 +383,9 @@ func (o *Operation) GetReturns() []string {
 }
 
 func (o *Operation) getAllReturns() {
-	returns := o.returns
 	if !o.returnsOnly {
-		returns = stringsUnion(returns, o.route.returns)
+		o.returns = stringsUnion(o.returns, o.route.returns)
 	}
-	o.returns = returns
 }
 
 func (o *Operation) BuildPath(v ...interface{}) string {
@@ -429,9 +424,12 @@ func (o *Operation) Clone() *Operation {
 	no.returns = o.returns
 	no.middleware = o.middleware
 	no.params = o.params.Clone()
-	no.renders = o.renders
 	no.mimeTypeIn = o.mimeTypeIn
 	no.mimeTypeParam = o.mimeTypeParam
+	no.handler = o.handler
+	no.returnsOnly = o.returnsOnly
+	no.acceptsOnly = o.acceptsOnly
+	no.schemesOnly = o.schemesOnly
 
 	return no
 }

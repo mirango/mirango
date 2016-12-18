@@ -27,6 +27,10 @@ type Route struct {
 	panicHandler            Handler
 
 	presets Presets
+
+	returnsOnly bool
+	acceptsOnly bool
+	schemesOnly bool
 }
 
 func createNodes(parts []string, names []string, indices []int, typs []int, cs bool) *node {
@@ -100,6 +104,10 @@ func (r *Route) BranchNested(path interface{}, cb func(*Route)) *Route {
 }
 
 func (r *Route) AddRoute(route *Route) *Route {
+	return r.AddRouteNested(route, nil)
+}
+
+func (r *Route) AddRouteNested(route *Route, cb func(*Route)) *Route {
 
 	if route == nil {
 		panic("route is nil")
@@ -109,9 +117,7 @@ func (r *Route) AddRoute(route *Route) *Route {
 		panic("wildcard routes can not have sub-routes")
 	}
 
-	if route.parent != nil {
-		route = route.Clone()
-	}
+	route = route.Clone()
 
 	r.node.addNode(route.getTopNode())
 	//r.node.compareNodes()
@@ -119,6 +125,11 @@ func (r *Route) AddRoute(route *Route) *Route {
 	route.parent = r
 
 	route.mirango = r.mirango
+
+	if cb != nil {
+		cb(route)
+	}
+
 	return route
 }
 
@@ -131,11 +142,26 @@ func (r *Route) getTopNode() *node {
 
 func (r *Route) Clone() *Route {
 	route := NewRoute(r.path)
-	route.path = r.path
+
 	route.operations = r.operations.Clone()
-	route.params = r.params
+	route.params = r.params.Clone()
 	route.middleware = r.middleware
-	return nil
+	route.schemes = r.schemes
+	route.accepts = r.accepts
+	route.returns = r.returns
+	route.notFoundHandler = r.notFoundHandler
+	route.methodNotAllowedHandler = r.methodNotAllowedHandler
+	route.panicHandler = r.panicHandler
+	route.presets = r.presets
+	route.returnsOnly = r.returnsOnly
+	route.acceptsOnly = r.acceptsOnly
+	route.schemesOnly = r.schemesOnly
+
+	for _, o := range route.operations.GetAll() {
+		o.route = route
+	}
+
+	return route
 }
 
 func processPath(slices []string) (parts []string, names []string, indices []int, typs []int) {
@@ -386,6 +412,24 @@ func (r *Route) Returns(returns ...string) *Route {
 	return r
 }
 
+func (r *Route) SchemesOnly(schemes ...string) *Route {
+	r.schemes = schemes
+	r.schemesOnly = true
+	return r
+}
+
+func (r *Route) AcceptsOnly(accepts ...string) *Route {
+	r.accepts = accepts
+	r.acceptsOnly = true
+	return r
+}
+
+func (r *Route) ReturnsOnly(returns ...string) *Route {
+	r.returns = returns
+	r.returnsOnly = true
+	return r
+}
+
 func (r *Route) With(mw ...interface{}) *Route {
 	for i := 0; i < len(mw); i++ {
 		switch t := mw[i].(type) {
@@ -431,8 +475,10 @@ func (r *Route) GetSchemes() []string {
 }
 
 func (r *Route) getAllSchemes() {
-	if r.parent != nil {
-		r.schemes = stringsUnion(r.schemes, r.parent.schemes)
+	if !r.schemesOnly {
+		if r.parent != nil {
+			r.schemes = stringsUnion(r.schemes, r.parent.schemes)
+		}
 	}
 }
 
@@ -441,8 +487,10 @@ func (r *Route) GetAccepts() []string {
 }
 
 func (r *Route) getAllAccepts() {
-	if r.parent != nil {
-		r.accepts = stringsUnion(r.accepts, r.parent.accepts)
+	if !r.acceptsOnly {
+		if r.parent != nil {
+			r.accepts = stringsUnion(r.accepts, r.parent.accepts)
+		}
 	}
 }
 
@@ -451,8 +499,10 @@ func (r *Route) GetReturns() []string {
 }
 
 func (r *Route) getAllReturns() {
-	if r.parent != nil {
-		r.returns = stringsUnion(r.returns, r.parent.returns)
+	if !r.returnsOnly {
+		if r.parent != nil {
+			r.returns = stringsUnion(r.returns, r.parent.returns)
+		}
 	}
 }
 

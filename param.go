@@ -69,7 +69,9 @@ func (p *Params) Union(params *Params) {
 
 func (p *Params) Clone() *Params {
 	params := NewParams()
-	params.Union(p)
+	for _, pa := range p.GetAll() {
+		params.Append(pa.Clone())
+	}
 	return params
 }
 
@@ -193,6 +195,26 @@ func (p *Param) In(in ...paramIn) *Param {
 		}
 	}
 	return p
+}
+
+func (p *Param) Clone() *Param {
+	param := NewParam(p.name)
+
+	param.validators = p.validators
+	param.def = p.def
+	param.as = p.as
+	param.strSep = p.strSep
+	param.isRequired = p.isRequired
+	param.isMultiple = p.isMultiple
+	param.isFile = p.isFile
+	param.isInPath = p.isInPath
+	param.isInQuery = p.isInQuery
+	param.isInHeader = p.isInHeader
+	param.isInBody = p.isInBody
+	param.preprocessor = p.preprocessor
+	param.postprocessor = p.postprocessor
+
+	return param
 }
 
 // If a Param is in path then it is required.

@@ -31,6 +31,7 @@ type resourceDelete interface {
 }
 
 type Resource struct {
+	Name        string
 	Route       *Route
 	EntityRoute *Route
 	Index       *Operation
@@ -39,6 +40,7 @@ type Resource struct {
 	Update      *Operation
 	Patch       *Operation
 	Delete      *Operation
+	re          interface{}
 }
 
 func NewResource(name string, re interface{}) *Resource {
@@ -55,14 +57,12 @@ func NewResourceNested(name string, re interface{}, cb func(*Resource)) *Resourc
 		panic("invalid resource name")
 	}
 
-	route := NewRoute(name)
-
 	name = strings.ToLower(name)
 
+	route := NewRoute(name)
 	paramName := inflector.Singularize(name) + "_id"
 
 	eRoute := route.Branch(":" + paramName)
-
 	eRoute.PathParam(paramName)
 
 	foundOne := false
@@ -104,6 +104,7 @@ func NewResourceNested(name string, re interface{}, cb func(*Resource)) *Resourc
 	}
 
 	resource := &Resource{
+		Name:        name,
 		Route:       route,
 		EntityRoute: eRoute,
 		Index:       index,
@@ -112,6 +113,7 @@ func NewResourceNested(name string, re interface{}, cb func(*Resource)) *Resourc
 		Update:      update,
 		Patch:       patch,
 		Delete:      delete,
+		re:          re,
 	}
 
 	if cb != nil {
@@ -136,6 +138,32 @@ func (r *Resource) ResourceNested(name string, re interface{}, cb func(*Resource
 	return resource
 }
 
+func (r *Resource) AddResource(resource *Resource) *Resource {
+	return r.AddResourceNested(resource, nil)
+}
+
+func (r *Resource) AddResourceNested(resource *Resource, cb func(*Resource)) *Resource {
+	if resource == nil {
+		panic("resource is nil")
+	}
+
+	resource = resource.Clone()
+
+	resource.Route = r.Route.AddRoute(resource.Route)
+	resource.EntityRoute = resource.Route.AddRoute(resource.EntityRoute)
+
+	if cb != nil {
+		cb(resource)
+	}
+
+	return resource
+}
+
+func (r *Resource) Clone() *Resource {
+	resource := NewResource(r.Name, r.re)
+	return resource
+}
+
 func (r *Route) Resource(name string, re interface{}) *Resource {
 	return r.ResourceNested(name, re, nil)
 }
@@ -152,18 +180,22 @@ func (r *Route) ResourceNested(name string, re interface{}, cb func(*Resource)) 
 }
 
 func (r *Route) AddResource(resource *Resource) *Resource {
+	return r.AddResourceNested(resource, nil)
+}
+
+func (r *Route) AddResourceNested(resource *Resource, cb func(*Resource)) *Resource {
 	if resource == nil {
 		panic("resource is nil")
 	}
 
-	nResource := &Resource{}
+	resource = resource.Clone()
 
-	if resource.Route.parent != nil {
-		nResource.Route = r.AddRoute(resource.Route)
-		nResource.EntityRoute = resource.Route.AddRoute(resource.EntityRoute)
-	} else {
-		nResource.Route = r.AddRoute(resource.Route)
+	resource.Route = r.AddRoute(resource.Route)
+	resource.EntityRoute = resource.Route.AddRoute(resource.EntityRoute)
+
+	if cb != nil {
+		cb(resource)
 	}
 
-	return nResource
+	return resource
 }
