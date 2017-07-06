@@ -24,7 +24,6 @@ import (
 	"net/http"
 
 	"github.com/mirango/framework"
-	"github.com/mirango/server"
 )
 
 type Mirango struct {
@@ -78,7 +77,7 @@ func (m *Mirango) Start(addr string) error {
 	m.Prepare()
 
 	if m.server == nil {
-		m.server = server.New()
+		m.server = DefaultServer()
 	}
 	m.server.SetHandler(m)
 	m.server.SetLogger(m.logger)
@@ -90,7 +89,7 @@ func (m *Mirango) StartTLS(addr string, certFile string, keyFile string) error {
 	m.Prepare()
 
 	if m.server == nil {
-		m.server = server.New()
+		m.server = DefaultServer()
 	}
 	m.server.SetHandler(m)
 	m.server.SetLogger(m.logger)
