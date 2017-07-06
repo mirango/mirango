@@ -573,7 +573,7 @@ func setPathParams(c *Context, params *Params, res result) *errors.Error {
 				return nil //error
 			}
 			pv = validation.NewValue(p.name, value, "path", p.GetAs())
-			c.Input[p.name] = pv
+			c.input.Append(pv)
 		}
 	}
 	return nil

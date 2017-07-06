@@ -220,11 +220,11 @@ func CheckParams(o *Operation) Middleware {
 					}
 				}
 				if pv != nil {
-					c.Input[p.name] = pv
+					c.input.Append(pv)
 				}
 			}
 
-			vErrs := params.ValidateAll(c, c.Input)
+			vErrs := params.ValidateAll(c, c.input)
 			if vErrs != nil {
 				if errs == nil {
 					errs = &validation.Error{}

@@ -8,39 +8,38 @@ import (
 
 type Request struct {
 	*http.Request
-	Input    framework.ParamValues
+	input    framework.ParamValues
 	sessions framework.Sessions
 }
 
 func NewRequest(r *http.Request) *Request {
 	return &Request{
 		Request: r,
-		Input:   framework.ParamValues{},
 	}
 }
 
 // Param returns the input parameter value by its name.
 func (r *Request) Param(name string) framework.ParamValue {
-	return r.Input[name]
+	return r.input.Get(name)
 }
 
 // ParamOk returns the input parameter value by its name.
-func (r *Request) ParamOk(name string) (framework.ParamValue, bool) {
-	p, ok := r.Input[name]
-	return p, ok
+func (r *Request) IsSet(name string) bool {
+	p := r.input.Get(name)
+	return p != nil
 }
 
 func (r *Request) Params(names ...string) framework.ParamValues {
 	if len(names) == 0 {
-		return r.Input
+		return r.input
 	}
-	params := framework.ParamValues{}
+	var params framework.ParamValues
 	for _, n := range names {
-		p, ok := r.Input[n]
-		if !ok {
+		p := r.input.Get(n)
+		if p == nil {
 			continue
 		}
-		params[n] = p
+		params.Append(p)
 	}
 	return params
 }

@@ -303,7 +303,7 @@ func (p *Param) ValidateAll(c framework.Context, v framework.ParamValue) *valida
 func (pa *Params) Validate(c framework.Context, vs framework.ParamValues) *validation.Error {
 	var err *validation.Error
 	for _, p := range pa.params {
-		err = p.Validate(c, vs[p.name])
+		err = p.Validate(c, vs.Get(p.name))
 		if err != nil {
 			return err
 		}
@@ -317,7 +317,7 @@ func (pa *Params) ValidateFirst(c framework.Context, vs framework.ParamValues) *
 	var err error
 nextParam:
 	for _, p := range pa.params {
-		err = p.validate(c, vs[p.name])
+		err = p.validate(c, vs.Get(p.name))
 		if err != nil {
 			if errs == nil {
 				errs = &validation.Error{}
@@ -334,7 +334,7 @@ func (pa *Params) ValidateAll(c framework.Context, vs framework.ParamValues) *va
 	var errs *validation.Error
 	var err []error
 	for _, p := range pa.params {
-		err = p.validateAll(c, vs[p.name])
+		err = p.validateAll(c, vs.Get(p.name))
 		if len(err) > 0 {
 			if errs == nil {
 				errs = &validation.Error{}
