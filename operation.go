@@ -130,7 +130,6 @@ func NewOperation(h interface{}) *Operation {
 		accepts: defaults.Accepts,
 		returns: defaults.Returns,
 	}
-	o.middleware = []Middleware{CheckReturns(o), CheckSchemes(o), CheckAccepts(o), CheckParams(o)}
 	return o
 }
 
@@ -228,8 +227,6 @@ func (o *Operation) With(mw ...interface{}) *Operation {
 	for i := 0; i < len(mw); i++ {
 		switch t := mw[i].(type) {
 		case Middleware:
-			o.middleware = middlewareAppend(o.middleware, t)
-		case MiddlewareFunc:
 			o.middleware = middlewareAppend(o.middleware, t)
 		case func(Handler) Handler:
 			o.middleware = middlewareAppend(o.middleware, MiddlewareFunc(t))
@@ -355,6 +352,7 @@ func (o *Operation) GetMiddleware() []Middleware {
 }
 
 func (o *Operation) getAllMiddleware() {
+	o.middleware = append(o.middleware, CheckReturns(o), CheckSchemes(o), CheckAccepts(o), CheckParams(o))
 	o.middleware = middlewareUnion(o.middleware, o.route.middleware)
 }
 

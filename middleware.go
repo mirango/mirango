@@ -14,13 +14,19 @@ type Middleware interface {
 	Run(Handler) Handler
 }
 
-type MiddlewareFunc func(Handler) Handler
-
-func (f MiddlewareFunc) Run(h Handler) Handler {
-	return f(h)
+type middlewareFunc struct {
+	f func(Handler) Handler
 }
 
-func CheckSchemes(o *Operation) MiddlewareFunc {
+func MiddlewareFunc(f func(Handler) Handler) Middleware {
+	return &middlewareFunc{f: f}
+}
+
+func (f middlewareFunc) Run(h Handler) Handler {
+	return f.f(h)
+}
+
+func CheckSchemes(o *Operation) Middleware {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
 
@@ -74,7 +80,7 @@ func getEncodingFromAccept(returns []string, r *Request) (string, *errors.Error)
 	return encoding, nil
 }
 
-func CheckReturns(o *Operation) MiddlewareFunc {
+func CheckReturns(o *Operation) Middleware {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
 			// if mimeInAccept {
@@ -92,7 +98,7 @@ func CheckReturns(o *Operation) MiddlewareFunc {
 	})
 }
 
-func CheckAccepts(o *Operation) MiddlewareFunc {
+func CheckAccepts(o *Operation) Middleware {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
 			// enc, err := getEncodingFromAccept(accepts, c.Request)
@@ -106,7 +112,7 @@ func CheckAccepts(o *Operation) MiddlewareFunc {
 	})
 }
 
-func CheckParams(o *Operation) MiddlewareFunc {
+func CheckParams(o *Operation) Middleware {
 	return MiddlewareFunc(func(next Handler) Handler {
 		return HandlerFunc(func(c *Context) interface{} {
 			params := o.params

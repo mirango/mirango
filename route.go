@@ -435,8 +435,6 @@ func (r *Route) With(mw ...interface{}) *Route {
 		switch t := mw[i].(type) {
 		case Middleware:
 			r.middleware = append(r.middleware, t)
-		case MiddlewareFunc:
-			r.middleware = append(r.middleware, t)
 		case func(Handler) Handler:
 			r.middleware = append(r.middleware, MiddlewareFunc(t))
 		}
