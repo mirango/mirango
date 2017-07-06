@@ -1,7 +1,6 @@
 package mirango
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"net/http"
 	"time"
@@ -14,34 +13,33 @@ type Response struct {
 	statusCode    int
 	contentLength int
 	encoding      string
-	indent        bool
-	renderers     framework.Renderers
+	encoders      framework.Encoders
 }
 
-func NewResponse(w http.ResponseWriter, renderers framework.Renderers) *Response {
+func NewResponse(w http.ResponseWriter, encoders framework.Encoders) *Response {
 	return &Response{
 		ResponseWriter: w,
-		renderers:      renderers,
+		encoders:       encoders,
 	}
 }
 
 func (w *Response) WriteEntity(status int, value interface{}) error {
-	_, err := WriteEntity(w, status, value, w.encoding, w.indent)
+	_, err := WriteEntity(w, status, value, w.encoding)
 	return err
 }
 
 func (w *Response) WriteAsXml(status int, value interface{}, writeHeader bool) error {
-	_, err := WriteAsXml(w, status, value, writeHeader, w.indent)
+	_, err := WriteAsXml(w, status, value, writeHeader)
 	return err
 }
 
 func (w *Response) WriteAsJson(status int, value interface{}) error {
-	_, err := WriteAsJson(w, status, value, w.indent)
+	_, err := WriteAsJson(w, status, value)
 	return err
 }
 
 func (w *Response) WriteJson(status int, value interface{}, contentType string) error {
-	_, err := WriteJson(w, status, value, contentType, w.indent)
+	_, err := WriteJson(w, status, value, contentType)
 	return err
 }
 
@@ -71,14 +69,6 @@ func (w *Response) Write(bytes []byte) (int, error) {
 	written, err := w.ResponseWriter.Write(bytes)
 	w.contentLength += written
 	return written, err
-}
-
-func (w *Response) Indented(indent bool) {
-	w.indent = indent
-}
-
-func (w *Response) IsIndented() bool {
-	return w.indent
 }
 
 func (w *Response) ContentLength() int {
@@ -144,10 +134,10 @@ func (w *Response) StreamAsXml(status int, d time.Duration, f func(int64) (inter
 }
 
 func (w *Response) Render(c *Context, data interface{}) error {
-	renderer := w.renderers.Get(w.encoding)
-	if renderer != nil {
+	encoder := w.encoders.Get(w.encoding)
+	if encoder != nil {
 		// check data type
-		b, err := renderer.Render(c, data)
+		b, err := encoder.Encode(data)
 		if err != nil {
 			return err
 		}
@@ -173,32 +163,27 @@ func (w *Response) Stream(status int, d time.Duration, f func(int64) (interface{
 	return nil
 }
 
-func WriteEntity(w http.ResponseWriter, status int, value interface{}, encoding string, indent bool) (int, error) {
+func WriteEntity(w http.ResponseWriter, status int, value interface{}, encoding string) (int, error) {
 	if value == nil {
 		return 0, nil
 	}
 
 	switch encoding {
 	case framework.MIME_JSON:
-		return WriteAsJson(w, status, value, indent)
+		return WriteAsJson(w, status, value)
 	case framework.MIME_XML:
-		return WriteAsXml(w, status, value, true, indent)
+		return WriteAsXml(w, status, value, true)
 	}
 
 	return 0, nil
 }
 
-func WriteAsXml(w http.ResponseWriter, status int, value interface{}, writeHeader bool, indent bool) (int, error) {
+func WriteAsXml(w http.ResponseWriter, status int, value interface{}, writeHeader bool) (int, error) {
 	var output []byte
 	var err error
 
 	if value == nil {
 		return 0, nil
-	}
-	if indent {
-		output, err = xml.MarshalIndent(value, " ", " ")
-	} else {
-		output, err = xml.Marshal(value)
 	}
 
 	if err != nil {
@@ -216,21 +201,16 @@ func WriteAsXml(w http.ResponseWriter, status int, value interface{}, writeHeade
 
 }
 
-func WriteAsJson(w http.ResponseWriter, status int, value interface{}, indent bool) (int, error) {
-	return WriteJson(w, status, value, framework.MIME_JSON, indent)
+func WriteAsJson(w http.ResponseWriter, status int, value interface{}) (int, error) {
+	return WriteJson(w, status, value, framework.MIME_JSON)
 }
 
-func WriteJson(w http.ResponseWriter, status int, value interface{}, contentType string, indent bool) (int, error) {
+func WriteJson(w http.ResponseWriter, status int, value interface{}, contentType string) (int, error) {
 	var output []byte
 	var err error
 
 	if value == nil {
 		return 0, nil
-	}
-	if indent {
-		output, err = json.MarshalIndent(value, " ", " ")
-	} else {
-		output, err = json.Marshal(value)
 	}
 
 	if err != nil {

@@ -30,7 +30,8 @@ type Mirango struct {
 	*node
 	*Route
 	server        framework.Server
-	renderers     framework.Renderers
+	encoders      framework.Encoders
+	decoders      framework.Decoders
 	logger        framework.Logger
 	sessionStores []framework.SessionStore // add ability to make sessions on different stores
 }
@@ -45,8 +46,21 @@ func New(path interface{}) *Mirango {
 	return m
 }
 
-func (m *Mirango) Renderers(r ...framework.Renderer) {
-	m.renderers.Append(r...)
+func (m *Mirango) Codecs(c ...framework.Codec) {
+	for _, e := range c {
+		m.encoders.Append(e)
+	}
+	for _, d := range c {
+		m.decoders.Append(d)
+	}
+}
+
+func (m *Mirango) Encoders(e ...framework.Encoder) {
+	m.encoders.Append(e...)
+}
+
+func (m *Mirango) Decoders(d ...framework.Decoder) {
+	m.decoders.Append(d...)
 }
 
 func (m *Mirango) Logger(l framework.Logger) {
@@ -99,7 +113,7 @@ func (m *Mirango) StartTLS(addr string, certFile string, keyFile string) error {
 
 func (m *Mirango) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	nr := NewRequest(r)
-	nw := NewResponse(w, m.renderers)
+	nw := NewResponse(w, m.encoders)
 	c := NewContext(nw, nr)
 
 	// defer log
